@@ -1,49 +1,42 @@
 import { Command } from 'commander';
 import * as path from 'path';
-import { detectStack, writeConfig, addToGitignore, configExists } from './commands/init.js';
-import { getVersion } from './commands/version.js';
-import { doctor } from './commands/doctor.js';
-import { start } from './commands/start.js';
+import { writeConfig, addToGitignore, configExists } from './commands/init.js';
+import { StackDetector } from '../core/stack-detector.js';
 
-export function createProgram(): Command {
-  const program = new Command();
+// ... (dentro da action do init)
+      const detector = new StackDetector();
+      const result = detector.detect(projectRoot);
+      console.log(`Stack detectada: ${result.stack}`);
+      console.log(`Natureza: ${result.nature}`);
+      if (result.phpVersion) console.log(`PHP Version: ${result.phpVersion}`);
 
-  program
-    .name('ocps')
-    .description('OCPS — Orquestrador Cognitivo de Projetos de Software')
-    .version(getVersion());
-
-  program
-    .command('init')
-    .description('Inicializa OCPS no projeto atual')
-    .option('-y, --yes', 'Responde sim automaticamente para todas as perguntas')
-    .action(async (options) => {
-      const projectRoot = process.cwd();
-
-      const existingConfig = configExists(projectRoot);
-      if (existingConfig && !options.yes) {
-        console.log('Configuração já existe. Use --yes para sobrescrever.');
-        process.exit(0);
+      if (result.nature === 'brownfield' && result.phpVersion && parseFloat(result.phpVersion) >= 8.4) {
+        console.log('\n💡 Sugestão: Este é um projeto Brownfield moderno (PHP >= 8.4).');
+        console.log('   Considere habilitar o MCP Serena para indexação de código e economia de tokens.');
       }
 
-      if (existingConfig && options.yes) {
-        console.log('Sobrescrevendo configuração existente...');
+      if (result.nature === 'greenfield') {
+        if (result.hasPrd) {
+          console.log('\n✓ PRD.md encontrado. O OCPS usará este arquivo para guiar o fluxo.');
+        } else {
+          console.log('\n⚠ Aviso: Projeto Greenfield sem PRD.md.');
+          console.log('   Recomenda-se criar um arquivo PRD.md com os requisitos do sistema.');
+        }
       }
-
-      const stack = await detectStack(projectRoot);
-      console.log(`Stack detectada: ${stack}`);
 
       const projectName = path.basename(projectRoot);
       const config = {
         version: '1.0.0',
         projectName,
-        stack,
+        stack: result.stack,
+        nature: result.nature,
+        phpVersion: result.phpVersion,
         primaryModel: 'claude-sonnet-4-5',
         mcp: {
           basicMemory: { enabled: true },
           context7: { enabled: true },
-          serena: { enabled: false },
-          laravelBoost: { enabled: false },
+          serena: { enabled: result.nature === 'brownfield' },
+          laravelBoost: { enabled: result.stack === 'laravel' },
         },
         coverageThreshold: { lines: 80, branches: 70 },
         createdAt: new Date().toISOString(),

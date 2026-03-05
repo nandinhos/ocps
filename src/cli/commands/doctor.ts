@@ -116,6 +116,7 @@ export async function doctor(): Promise<void> {
 
   console.log('\n=== OCPS Doctor ===\n');
 
+  const config = readConfig(projectRoot);
   const mcpsResult = await checkMcps(projectRoot);
 
   const result: DoctorResult = {
@@ -144,6 +145,13 @@ export async function doctor(): Promise<void> {
   const configIcon = result.config.status === 'ok' ? '✓' : '✗';
   const configColor = result.config.status === 'ok' ? '\x1b[32m' : '\x1b[31m';
   console.log(`${configColor}${configIcon}\x1b[0m Config: ${result.config.message || 'OK'}`);
+
+  if (config) {
+    console.log(`\x1b[32m✓\x1b[0m Natureza: ${config.nature}`);
+    if (config.phpVersion) {
+      console.log(`\x1b[32m✓\x1b[0m PHP Version: ${config.phpVersion}`);
+    }
+  }
 
   console.log('\n--- MCPs ---\n');
 

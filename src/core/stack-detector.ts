@@ -1,12 +1,15 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import type { StackType } from '../types/config.js';
+import type { StackType, ProjectNature } from '../types/config.js';
 
 export interface StackDetectorResult {
   stack: StackType;
   confidence: number;
   indicators: string[];
   files: string[];
+  nature: ProjectNature;
+  phpVersion?: string;
+  hasPrd: boolean;
 }
 
 export class StackDetector {
@@ -17,103 +20,77 @@ export class StackDetector {
     const hasPackageJson = fs.existsSync(path.join(projectRoot, 'package.json'));
     const hasComposerJson = fs.existsSync(path.join(projectRoot, 'composer.json'));
     const hasRequirementsTxt = fs.existsSync(path.join(projectRoot, 'requirements.txt'));
-    const hasSetupPy = fs.existsSync(path.join(projectRoot, 'setup.py'));
-    const hasPyprojectToml = fs.existsSync(path.join(projectRoot, 'pyproject.toml'));
     const hasGoMod = fs.existsSync(path.join(projectRoot, 'go.mod'));
     const hasCargoToml = fs.existsSync(path.join(projectRoot, 'Cargo.toml'));
+    const hasPrd = fs.existsSync(path.join(projectRoot, 'PRD.md'));
 
+    let stack: StackType = 'unknown';
+    let phpVersion: string | undefined;
+
+    // Detecção de Stack e PHP Version
     if (hasComposerJson) {
       try {
         const content = fs.readFileSync(path.join(projectRoot, 'composer.json'), 'utf-8');
         const composer = JSON.parse(content);
+        files.push('composer.json');
+        
+        phpVersion = composer.require?.php?.replace(/[^0-9.]/g, '') || '8.2'; // default se não achar
+
         if (composer.require?.['laravel/framework']) {
-          files.push('composer.json');
           indicators.push('Laravel detected via composer.json');
-          return { stack: 'laravel', confidence: 1.0, indicators, files };
+          stack = 'laravel';
+        } else {
+          indicators.push('PHP project detected');
+          stack = 'unknown'; // Podia ser 'php' mas o tipo atual não tem
         }
-      } catch {
-        // ignore
-      }
+      } catch { /* ignore */ }
     }
 
-    if (hasPackageJson) {
+    if (stack === 'unknown' && hasPackageJson) {
       try {
         const content = fs.readFileSync(path.join(projectRoot, 'package.json'), 'utf-8');
         const pkg = JSON.parse(content);
         files.push('package.json');
-
         if (pkg.dependencies?.typescript || pkg.devDependencies?.typescript) {
-          indicators.push('TypeScript detected via package.json');
-          return { stack: 'typescript', confidence: 0.9, indicators, files };
+          stack = 'typescript';
+          indicators.push('TypeScript detected');
+        } else {
+          stack = 'nodejs';
+          indicators.push('Node.js detected');
         }
+      } catch { /* ignore */ }
+    }
 
-        if (pkg.dependencies || pkg.devDependencies) {
-          indicators.push('Node.js detected via package.json');
-          return { stack: 'nodejs', confidence: 0.8, indicators, files };
-        }
-      } catch {
-        // ignore
+    // Heurística de Natureza (Greenfield vs Brownfield)
+    // Se tem src/ ou app/ com arquivos, é Brownfield.
+    const hasSourceDir = fs.existsSync(path.join(projectRoot, 'src')) || fs.existsSync(path.join(projectRoot, 'app'));
+    let nature: ProjectNature = 'greenfield';
+
+    if (hasSourceDir) {
+      const srcDir = fs.existsSync(path.join(projectRoot, 'src')) ? 'src' : 'app';
+      const filesInSrc = fs.readdirSync(path.join(projectRoot, srcDir)).filter(f => !f.startsWith('.'));
+      if (filesInSrc.length > 2) { // Mais que um boilerplate básico
+        nature = 'brownfield';
       }
     }
 
-    if (hasRequirementsTxt || hasSetupPy || hasPyprojectToml) {
-      files.push(
-        ...(hasRequirementsTxt ? ['requirements.txt'] : []),
-        ...(hasSetupPy ? ['setup.py'] : []),
-        ...(hasPyprojectToml ? ['pyproject.toml'] : []),
-      );
-      indicators.push('Python detected via config files');
-      return { stack: 'python', confidence: 0.9, indicators, files };
+    // Refinamento PHP Legacy
+    if (phpVersion) {
+      const versionNum = parseFloat(phpVersion);
+      if (versionNum < 8.3) {
+        nature = 'legacy';
+        indicators.push(`Legacy PHP detected: ${phpVersion}`);
+      }
     }
 
-    if (hasGoMod) {
-      files.push('go.mod');
-      indicators.push('Go detected via go.mod');
-      return { stack: 'golang', confidence: 0.9, indicators, files };
-    }
-
-    if (hasCargoToml) {
-      files.push('Cargo.toml');
-      indicators.push('Rust detected via Cargo.toml');
-      return { stack: 'rust', confidence: 0.9, indicators, files };
-    }
-
-    return { stack: 'unknown', confidence: 0, indicators: [], files: [] };
-  }
-
-  getTestFramework(stack: StackType): string {
-    switch (stack) {
-      case 'typescript':
-      case 'nodejs':
-        return 'vitest';
-      case 'laravel':
-        return 'pest';
-      case 'python':
-        return 'pytest';
-      case 'golang':
-        return 'testing';
-      case 'rust':
-        return 'cargo test';
-      default:
-        return 'unknown';
-    }
-  }
-
-  getBuildCommand(stack: StackType): string {
-    switch (stack) {
-      case 'typescript':
-      case 'nodejs':
-        return 'npm run build';
-      case 'laravel':
-        return 'composer install';
-      case 'python':
-        return 'pip install -r requirements.txt';
-      case 'golang':
-        return 'go build';
-      case 'rust':
-        return 'cargo build';
-      default:
-        return 'unknown';
-    }
+    return {
+      stack,
+      confidence: stack !== 'unknown' ? 1.0 : 0,
+      indicators,
+      files,
+      nature,
+      phpVersion,
+      hasPrd
+    };
   }
 }
