@@ -1,0 +1,21 @@
+node_modules/
+dist/
+coverage/
+*.js.map
+
+# Credenciais locais — NUNCA commitar
+.ocps/.env
+.env
+.env.local
+
+# Build
+dist/
+build/
+*.tsbuildinfo
+
+# Logs (opcional — pode commitar para auditoria)
+# .ocps/logs/
+
+# OS
+.DS_Store
+Thumbs.db
