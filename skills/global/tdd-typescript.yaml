@@ -1,0 +1,78 @@
+name: tdd-typescript
+version: 1.1.0
+agent: tdd
+stack:
+  - typescript
+  - nodejs
+  - vitest
+
+description: >
+  Padrões TDD com Vitest para projetos TypeScript/Node.js.
+  Aplicar antes de qualquer implementação de código de produção.
+  Cobrir unit tests com foco em comportamento, não implementação.
+
+patterns:
+  - |
+    Nomenclatura obrigatória: deve_[verbo]_quando_[condição]
+    it('deve_retornar_erro_quando_arquivo_nao_existe', async () => { ... })
+
+  - |
+    Arrange-Act-Assert explícito com comentários
+    // Arrange
+    const engine = new SkillEngine();
+    // Act
+    const result = await engine.loadSkill('tdd-typescript', '/project');
+    // Assert
+    expect(result.ok).toBe(true);
+
+  - |
+    Result type para erros — nunca throw em funções de domínio
+    const result = await loadSkill(name);
+    if (!result.ok) return { ok: false, error: result.error };
+
+  - |
+    vi.mock() sempre no topo do arquivo, antes dos imports de implementação
+    vi.mock('../mcp/basic-memory');
+    import { loadSkill } from '../skills/skill-loader';
+
+  - |
+    Test doubles: prefer vi.fn() e vi.spyOn() sobre mocks manuais
+    const mockLoad = vi.fn().mockResolvedValue({ ok: true, value: skill });
+
+antiPatterns:
+  - |
+    NUNCA testar detalhes de implementação — testar comportamento
+    // ❌ Errado: testa que método interno foi chamado
+    expect(engine._internalCache).toHaveLength(1)
+    // ✅ Correto: testa comportamento observável
+    expect(await engine.loadSkill('x')).toEqual({ ok: true, value: ... })
+
+  - |
+    NUNCA usar any em TypeScript — usar unknown + type guards
+    // ❌ const result: any = await fetch(...)
+    // ✅ const result: unknown = await fetch(...)
+    //    if (isSkill(result)) { ... }
+
+  - |
+    NUNCA adicionar funcionalidade na fase Refactor
+    // Refactor = melhorar qualidade, NÃO adicionar features
+
+  - |
+    NUNCA avançar com testes vermelhos
+    // Fase Green: todos os testes devem estar verdes antes de Refactor
+
+lessonsLearned:
+  - version: "v1.1"
+    lesson: >
+      js-yaml v4 exporta load(), não parse(). Import { parse } retorna undefined
+      silenciosamente sem erro TypeScript — o erro só aparece em runtime como
+      "parse is not a function". Correto: import { load as parseYaml } from 'js-yaml'.
+    addedAt: "2026-03-05T15:10:00Z"
+    projectSource: "ocps"
+
+references:
+  - https://vitest.dev/guide/
+  - https://www.typescriptlang.org/docs/handbook/2/types-from-types.html
+  - https://kentcdodds.com/blog/write-tests
+
+updatedAt: "2026-03-05T15:10:00Z"
