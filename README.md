@@ -103,6 +103,42 @@ src/
 | 6    | Multi-LLM     | Fallback automático por rate limit |
 | 7    | Multi-Stack   | Node.js + Python end-to-end        |
 
+## 🔌 Integração MCP
+
+O OCPS pode ser usado como servidor MCP para outras ferramentas como **Gemini CLI** e **Claude Code**.
+
+### Adicionar ao Gemini CLI
+
+```bash
+# Registrar o servidor MCP do OCPS
+gemini mcp add ocps npm run mcp
+```
+
+### Ferramentas Disponíveis
+
+| Ferramenta          | Descrição                       |
+| ------------------- | ------------------------------- |
+| `ocps_brainstorm`   | Transforma ideia em BacklogItem |
+| `ocps_planning`     | Gera tasks e roadmap            |
+| `ocps_tdd`          | Executa ciclo TDD               |
+| `ocps_code_review`  | Review 3 passes                 |
+| `ocps_deploy`       | Deploy staging/production       |
+| `ocps_doctor`       | Verifica saúde do ambiente      |
+| `ocps_session_list` | Lista sessões ativas            |
+
+### Usar no Gemini CLI
+
+```bash
+# Executar brainstorming
+gemini "Use ocps_brainstorm with rawIdea: 'Criar sistema de login'"
+
+# Executar code review
+gemini "Use ocps_code_review with code: 'function test() {}'"
+
+# Verificar ambiente
+gemini "Use ocps_doctor"
+```
+
 ## 🔧 Configuração
 
 Cria `.ocps/config.yaml`:

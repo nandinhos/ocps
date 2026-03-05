@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Read(//usr/bin/**)",
+      "Read(//usr/**)",
+      "Bash(export NVM_DIR=\"$HOME/.nvm\")",
+      "Bash(source:*)",
+      "Bash(node:*)",
+      "Bash(npm --version:*)",
+      "Bash(npm run build:*)",
+      "Bash(npm run test:*)",
+      "Bash(npm --prefix /home/nandodev/projects/ocps run test)",
+      "Bash(~/.nvm/versions/node/v24.13.0/bin/npm --prefix /home/nandodev/projects/ocps run test)",
+      "Bash(PATH=\"$HOME/.nvm/versions/node/v24.13.0/bin:$PATH\" npm --prefix /home/nandodev/projects/ocps run test)",
+      "Bash(NPM=\"$HOME/.nvm/versions/node/v24.13.0/bin/npm\")",
+      "Bash(NODE=\"$HOME/.nvm/versions/node/v24.13.0/bin/node\")",
+      "Bash(PATH=\"$HOME/.nvm/versions/node/v24.13.0/bin:$PATH\" $NODE $NPM --prefix /home/nandodev/projects/ocps run test:*)",
+      "Bash(/home/nandodev/.nvm/versions/node/v24.13.0/bin/node /home/nandodev/.nvm/versions/node/v24.13.0/bin/npm:*)",
+      "Bash(/home/nandodev/.nvm/versions/node/v24.13.0/bin/node:*)"
+    ]
+  }
+}
