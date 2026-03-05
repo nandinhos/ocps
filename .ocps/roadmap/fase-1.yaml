@@ -1,0 +1,175 @@
+featureId: fase-1-core-agents
+feature:
+  id: fase-1-core-agents
+  title: 'Fase 1 — Core Agents'
+  description: >
+    Implementação dos 3 primeiros agentes (Brainstorm, Planning, TddAgent) com orchestrator
+    conectando-os em pipeline sequencial. Gate Engine com confirmação interativa via Ink.
+  acceptanceCriteria:
+    - 'BrainstormAgent gera BacklogItem com critérios de aceite'
+    - 'PlanningAgent decompõe em tasks e gera feature YAML'
+    - 'TddAgent executa ciclo Red→Green com SDK Anthropic'
+    - 'Orchestrator coordena pipeline Brainstorm→Planning→TDD'
+    - 'Gate Engine confirma interativamente antes de avançar'
+    - 'Feature completa passa do Brainstorm ao TDD sem intervenção manual (exceto gates)'
+  status: pending
+
+  sprint:
+    id: sprint-fase-1
+    capacityHours: 40
+    tasks:
+      # ============ BrainstormAgent ============
+      - id: t010
+        title: 'BrainstormAgent: contrato TypeScript'
+        description: 'Define interface BrainstormInput, BrainstormOutput, implementa Agent<TInput,TOutput>'
+        completionCriteria: 'Contrato compila sem erro, sem any implícito'
+        assignedAgent: tdd
+        status: done
+        completedAt: '2026-03-05T15:50:00Z'
+
+      - id: t011
+        title: 'BrainstormAgent: implementação básica'
+        description: 'Implementa execute() com skills elicitacao-requisitos, ambiguity-detection'
+        completionCriteria: 'Agent carrega skills e processa rawIdea → BacklogItem'
+        assignedAgent: tdd
+        status: done
+        completedAt: '2026-03-05T15:55:00Z'
+
+      - id: t012
+        title: 'BrainstormAgent: testes unitários'
+        description: 'Testes para detectStack, generateBacklogItem, validateOutput'
+        completionCriteria: 'Mínimo 80% coverage, todos passando'
+        assignedAgent: tdd
+        status: done
+        completedAt: '2026-03-05T15:56:00Z'
+
+      # ============ PlanningAgent ============
+      - id: t013
+        title: 'PlanningAgent: contrato TypeScript'
+        description: 'Define interface PlanningInput, PlanningOutput. Herda de Agent<TInput,TOutput>'
+        completionCriteria: 'Contrato compila sem erro, compatível com BrainstormAgent'
+        assignedAgent: tdd
+        status: done
+        completedAt: '2026-03-05T15:57:00Z'
+
+      - id: t014
+        title: 'PlanningAgent: implementação básica'
+        description: 'Implementa execute() com skills feature-decomposition, roadmap-generation'
+        completionCriteria: 'Decompõe BacklogItem em tasks, gera feature YAML'
+        assignedAgent: tdd
+        status: done
+        completedAt: '2026-03-05T15:58:00Z'
+
+      - id: t015
+        title: 'PlanningAgent: testes unitários'
+        description: 'Testes para decomposeFeature, generateYaml, resolveDependencies'
+        completionCriteria: 'Mínimo 80% coverage, todos passando'
+        assignedAgent: tdd
+        status: done
+        completedAt: '2026-03-05T15:58:00Z'
+
+      # ============ TddAgent ============
+      - id: t016
+        title: 'TddAgent: contrato TypeScript'
+        description: 'Define interface TddInput, TddOutput. Herda de Agent<TInput,TOutput>'
+        completionCriteria: 'Contrato compila sem erro, compatível com PlanningAgent'
+        assignedAgent: tdd
+        status: done
+        completedAt: '2026-03-05T17:40:00Z'
+
+      - id: t017
+        title: 'TddAgent: integração Anthropic SDK'
+        description: 'Implementa execute() com @anthropic-ai/sdk, ciclo Red→Green→Refactor'
+        completionCriteria: 'Gera teste (Red), código mínimo (Green), refatora (Refactor)'
+        assignedAgent: tdd
+        status: done
+        completedAt: '2026-03-05T17:44:00Z'
+
+      - id: t018
+        title: 'TddAgent: testes unitários'
+        description: 'Testes para writeTest, writeImplementation, runCoverage'
+        completionCriteria: 'Mínimo 80% coverage, mocks do SDK funcionando'
+        assignedAgent: tdd
+        status: done
+        completedAt: '2026-03-05T17:44:00Z'
+
+      # ============ Orchestrator ============
+      - id: t019
+        title: 'Orchestrator: contrato TypeScript'
+        description: 'Define interface PipelineContext, executePipeline(input)'
+        completionCriteria: 'Contrato compila, compatível com todos os agentes'
+        assignedAgent: tdd
+        status: done
+        completedAt: '2026-03-05T17:45:00Z'
+
+      - id: t020
+        title: 'Orchestrator: pipeline sequencial'
+        description: 'Implementa execução Brainstorm→Planning→TDD com estado compartilhado'
+        completionCriteria: 'Orquestra fluxo completo com contexto entre agentes'
+        assignedAgent: tdd
+        status: done
+        completedAt: '2026-03-05T17:46:00Z'
+
+      - id: t021
+        title: 'Orchestrator: testes de integração'
+        description: 'Teste end-to-end: ideia → backlog → feature → código'
+        completionCriteria: 'Pipeline executa sem erro, gates confirmam'
+        assignedAgent: tdd
+        status: done
+        completedAt: '2026-03-05T17:46:00Z'
+
+      # ============ Gate Engine ============
+      - id: t022
+        title: 'Gate Engine: contrato TypeScript'
+        description: 'Estende interface Gate com confirm(prompt) usando Ink'
+        completionCriteria: 'Contrato compila, compatível com CLI atual'
+        assignedAgent: tdd
+        status: done
+        completedAt: '2026-03-05T17:47:00Z'
+
+      - id: t023
+        title: 'Gate Engine: confirmação interativa Ink'
+        description: 'Implementa prompt de confirmação com WaitForUserInput via readline'
+        completionCriteria: 'Pára pipeline, aguarda ENTER, retorna resultado'
+        assignedAgent: tdd
+        status: done
+        completedAt: '2026-03-05T17:47:00Z'
+
+      - id: t024
+        title: 'Gate Engine: integração com CLI'
+        description: 'Conecta gates ao ocps start, exibe prompts entre agentes'
+        completionCriteria: 'ocps start executa pipeline com gates interativos'
+        assignedAgent: tdd
+        status: done
+        completedAt: '2026-03-05T17:48:00Z'
+
+      # ============ Integração Final ============
+      - id: t025
+        title: 'Validação end-to-end Fase 1'
+        description: 'Executa uma feature completa: Brainstorm → Planning → TDD com gates'
+        completionCriteria: 'Feature passa por todos os agentes e gates sem intervenção manual'
+        assignedAgent: human
+        status: done
+        completedAt: '2026-03-05T17:50:00Z'
+
+decisions: []
+blockers:
+  - id: blocker-001
+    description: 'MCPs em modo simulação — ping HTTP real pendente para Fase 4'
+    resolvedInPhase: 4
+skillsUsed: []
+
+llmCheckpoint:
+  model: null
+  tokensAccumulated: 0
+  lastSavedAt: null
+
+gates:
+  escopo:
+    status: approved
+    approvedBy: developer
+    checkedAt: '2026-03-05'
+    evidence: ['Roadmap proposto', 'Escopo aprovado pelo desenvolvedor']
+
+createdAt: '2026-03-05T16:00:00Z'
+updatedAt: '2026-03-05T16:00:00Z'

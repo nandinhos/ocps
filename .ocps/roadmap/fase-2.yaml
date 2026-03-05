@@ -1,0 +1,123 @@
+featureId: fase-2-quality-gates
+feature:
+  id: fase-2-quality-gates
+  title: 'Fase 2 — Quality Gates'
+  description: >
+    Implementação do CodeReviewAgent (3 passes: estrutural, qualidade, segurança)
+    e QaAgent (testes integração, E2E, validação critérios aceite).
+  acceptanceCriteria:
+    - 'CodeReviewAgent faz revisão em 3 passes com blockers e suggestions'
+    - 'QaAgent executa testes integração e valida critérios de aceite'
+    - 'Gate automático bloqueia se blockers > 0 ou critérios não atingidos'
+    - 'Pipeline completo: Brainstorm → Planning → TDD → Review → QA'
+  status: done
+
+  sprint:
+    id: sprint-fase-2
+    capacityHours: 40
+    tasks:
+      # ============ CodeReviewAgent ============
+      - id: t026
+        title: 'CodeReviewAgent: contrato TypeScript'
+        description: 'Define interfaces CodeReviewInput, CodeReviewOutput, ReviewItem'
+        completionCriteria: 'Contrato compila, compatível com TddAgent output'
+        assignedAgent: tdd
+        status: done
+        completedAt: '2026-03-05T17:50:00Z'
+
+      - id: t027
+        title: 'CodeReviewAgent: implementação 3 passes'
+        description: 'Implementa passes: Structural (SOLID), Quality (DRY, naming), Security (XSS, injection)'
+        completionCriteria: 'Retorna blockers e suggestions para cada pass'
+        assignedAgent: tdd
+        status: done
+        completedAt: '2026-03-05T17:52:00Z'
+
+      - id: t028
+        title: 'CodeReviewAgent: integração LLM'
+        description: 'Usa llm-client para análise de código estruturada'
+        completionCriteria: 'LLM gera análise dos 3 passes'
+        assignedAgent: tdd
+        status: done
+        completedAt: '2026-03-05T17:53:00Z'
+
+      - id: t029
+        title: 'CodeReviewAgent: testes unitários'
+        description: 'Testes para validatePass, aggregateResults, gateDecision'
+        completionCriteria: 'Mínimo 80% coverage'
+        assignedAgent: tdd
+        status: done
+        completedAt: '2026-03-05T17:54:00Z'
+
+      # ============ QaAgent ============
+      - id: t030
+        title: 'QaAgent: contrato TypeScript'
+        description: 'Define interfaces QaInput, QaOutput, TestResult, Evidence'
+        completionCriteria: 'Contrato compila, compatível com CodeReviewAgent output'
+        assignedAgent: tdd
+        status: done
+        completedAt: '2026-03-05T17:55:00Z'
+
+      - id: t031
+        title: 'QaAgent: implementação'
+        description: 'Executa testes integração, E2E, valida critérios de aceite'
+        completionCriteria: 'Retorna resultados de testes e evidências'
+        assignedAgent: tdd
+        status: done
+        completedAt: '2026-03-05T17:56:00Z'
+
+      - id: t032
+        title: 'QaAgent: testes unitários'
+        description: 'Testes para runIntegrationTests, validateAcceptanceCriteria'
+        completionCriteria: 'Mínimo 80% coverage'
+        assignedAgent: tdd
+        status: done
+        completedAt: '2026-03-05T17:56:00Z'
+
+      # ============ Pipeline Integrado ============
+      - id: t033
+        title: 'Pipeline: integrar Review e QA ao Orchestrator'
+        description: 'Adiciona fases Review e QA ao pipeline sequencial'
+        completionCriteria: 'Pipeline executa: Brainstorm → Planning → TDD → Review → QA'
+        assignedAgent: tdd
+        status: done
+        completedAt: '2026-03-05T17:57:00Z'
+
+      - id: t034
+        title: 'Pipeline: gates automáticos'
+        description: 'Gates bloqueiam automaticamente se blockers > 0 ou QA reprovado'
+        completionCriteria: 'Zero intervenção manual nos gates de qualidade'
+        assignedAgent: tdd
+        status: done
+        completedAt: '2026-03-05T17:57:00Z'
+
+      # ============ Integração Final ============
+      - id: t035
+        title: 'Validação end-to-end Fase 2'
+        description: 'Executa feature completa com todas as fases do pipeline'
+        completionCriteria: 'Feature passa por pipeline completo automático'
+        assignedAgent: human
+        status: done
+        completedAt: '2026-03-05T17:58:00Z'
+
+decisions: []
+blockers:
+  - id: blocker-001
+    description: 'MCPs em modo simulação — ping HTTP real pendente para Fase 4'
+    resolvedInPhase: 4
+skillsUsed: []
+
+llmCheckpoint:
+  model: null
+  tokensAccumulated: 0
+  lastSavedAt: null
+
+gates:
+  escopo:
+    status: approved
+    approvedBy: developer
+    checkedAt: '2026-03-05'
+    evidence: ['Roadmap proposto', 'Escopo aprovado pelo desenvolvedor']
+
+createdAt: '2026-03-05T18:00:00Z'
+updatedAt: '2026-03-05T18:00:00Z'

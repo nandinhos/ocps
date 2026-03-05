@@ -1,0 +1,22 @@
+version: "0.0.1"
+projectName: "ocps"
+stack: typescript
+
+primaryModel: claude-opus-4-5
+fallbackModel: claude-sonnet-4-5
+
+mcp:
+  basicMemory:
+    enabled: true
+  context7:
+    enabled: true
+  serena:
+    enabled: false   # ativar na Fase 4
+  laravelBoost:
+    enabled: false   # não é projeto Laravel
+
+coverageThreshold:
+  lines: 80
+  branches: 70
+
+createdAt: "2025-01-01T00:00:00Z"
