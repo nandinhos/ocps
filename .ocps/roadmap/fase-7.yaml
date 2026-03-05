@@ -1,0 +1,78 @@
+featureId: fase-7-multi-stack
+feature:
+  id: fase-7-multi-stack
+  title: 'Fase 7 — Multi-Stack'
+  description: >
+    Suporte end-to-end para Node.js e Python.
+    Detecção automática de stack e habilidades específicas.
+  acceptanceCriteria:
+    - 'Detecção automática de Python'
+    - 'Skills para Python (pytest, pip, venv)'
+    - 'Orchestrator adapta pipeline por stack'
+  status: done
+
+  sprint:
+    id: sprint-fase-7
+    capacityHours: 40
+    tasks:
+      # ============ Python Support ============
+      - id: t067
+        title: 'Stack Detector: suporte Python'
+        description: 'Detecta Python via requirements.txt, setup.py, pyproject.toml'
+        completionCriteria: 'Detecta Python automaticamente'
+        assignedAgent: tdd
+        status: done
+        completedAt: '2026-03-05T18:30:00Z'
+
+      - id: t068
+        title: 'Skills: Python testing'
+        description: 'Cria skills para pytest e testing Python'
+        completionCriteria: 'Skills pytest carregam corretamente'
+        assignedAgent: tdd
+        status: done
+        completedAt: '2026-03-05T18:31:00Z'
+
+      - id: t069
+        title: 'TddAgent: suporte Python'
+        description: 'Adapta TddAgent para Python (pytest)'
+        completionCriteria: 'Gera testes pytest corretamente'
+        assignedAgent: tdd
+        status: done
+        completedAt: '2026-03-05T18:32:00Z'
+
+      # ============ Orchestrator ============
+      - id: t070
+        title: 'Orchestrator: adapta pipeline por stack'
+        description: 'Pipeline seleciona skills e agentes por stack'
+        completionCriteria: 'Python usa pytest, Node usa vitest'
+        assignedAgent: tdd
+        status: done
+        completedAt: '2026-03-05T18:33:00Z'
+
+      # ============ Validação ============
+      - id: t071
+        title: 'Validação end-to-end Fase 7'
+        description: 'Testa pipeline completo em Python'
+        completionCriteria: 'Feature completa em Python sem intervenção'
+        assignedAgent: human
+        status: done
+        completedAt: '2026-03-05T18:33:00Z'
+
+decisions: []
+blockers: []
+skillsUsed: []
+
+llmCheckpoint:
+  model: null
+  tokensAccumulated: 0
+  lastSavedAt: null
+
+gates:
+  escopo:
+    status: approved
+    approvedBy: developer
+    checkedAt: '2026-03-05'
+    evidence: ['Roadmap proposto', 'Escopo aprovado pelo desenvolvedor']
+
+createdAt: '2026-03-05T18:30:00Z'
+updatedAt: '2026-03-05T18:30:00Z'

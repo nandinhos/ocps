@@ -1,0 +1,107 @@
+featureId: fase-3-deploy
+feature:
+  id: fase-3-deploy
+  title: 'Fase 3 — Deploy'
+  description: >
+    Implementação do DeployAgent com pipeline CI/CD via GitHub Actions.
+    Smoke tests em staging, promoção para produção com confirmação.
+  acceptanceCriteria:
+    - 'DeployAgent gera workflow GitHub Actions'
+    - 'Executa smoke tests em staging automaticamente'
+    - 'Promoção para produção requer confirmação explícita'
+    - 'Rollback plan disponível'
+    - 'Release notes geradas automaticamente'
+  status: done
+
+  sprint:
+    id: sprint-fase-3
+    capacityHours: 40
+    tasks:
+      # ============ DeployAgent ============
+      - id: t036
+        title: 'DeployAgent: contrato TypeScript'
+        description: 'Define interfaces DeployInput, DeployOutput, DeploymentResult'
+        completionCriteria: 'Contrato compila, compatível com QaAgent output'
+        assignedAgent: tdd
+        status: done
+        completedAt: '2026-03-05T18:08:00Z'
+
+      - id: t037
+        title: 'DeployAgent: implementação'
+        description: 'Gera workflow GitHub Actions, executa deploy, smoke tests'
+        completionCriteria: 'Deploy para staging com smoke tests'
+        assignedAgent: tdd
+        status: done
+        completedAt: '2026-03-05T18:09:00Z'
+
+      - id: t038
+        title: 'DeployAgent: integração LLM para release notes'
+        description: 'Gera release notes automaticamente via LLM'
+        completionCriteria: 'Release notes em formato markdown'
+        assignedAgent: tdd
+        status: done
+        completedAt: '2026-03-05T18:10:00Z'
+
+      - id: t039
+        title: 'DeployAgent: rollback strategy'
+        description: 'Implementa plano de rollback automático'
+        completionCriteria: 'Rollback disponível em caso de falha'
+        assignedAgent: tdd
+        status: done
+        completedAt: '2026-03-05T18:10:00Z'
+
+      - id: t040
+        title: 'DeployAgent: testes unitários'
+        description: 'Testes para generateWorkflow, runDeploy, rollback'
+        completionCriteria: 'Mínimo 80% coverage'
+        assignedAgent: tdd
+        status: done
+        completedAt: '2026-03-05T18:10:00Z'
+
+      # ============ Pipeline Integrado ============
+      - id: t041
+        title: 'Pipeline: integrar Deploy ao Orchestrator'
+        description: 'Adiciona fase Deploy ao pipeline sequencial após QA'
+        completionCriteria: 'Pipeline: Brainstorm → Planning → TDD → Review → QA → Deploy'
+        assignedAgent: tdd
+        status: done
+        completedAt: '2026-03-05T18:10:00Z'
+
+      - id: t042
+        title: 'Pipeline: gate de promoção produção'
+        description: 'Gate requer confirmação explícita para produção'
+        completionCriteria: 'Staging automático, produção manual'
+        assignedAgent: tdd
+        status: done
+        completedAt: '2026-03-05T18:10:00Z'
+
+      # ============ Integração Final ============
+      - id: t043
+        title: 'Validação end-to-end Fase 3'
+        description: 'Executa pipeline completo com deploy'
+        completionCriteria: 'Feature deployada em staging automaticamente'
+        assignedAgent: human
+        status: done
+        completedAt: '2026-03-05T18:11:00Z'
+
+decisions: []
+blockers:
+  - id: blocker-001
+    description: 'MCPs em modo simulação — ping HTTP real pendente para Fase 4'
+    resolvedInPhase: 4
+skillsUsed: []
+
+llmCheckpoint:
+  model: null
+  tokensAccumulated: 0
+  lastSavedAt: null
+
+gates:
+  escopo:
+    status: approved
+    approvedBy: developer
+    checkedAt: '2026-03-05'
+    evidence: ['Roadmap proposto', 'Escopo aprovado pelo desenvolvedor']
+
+createdAt: '2026-03-05T18:10:00Z'
+updatedAt: '2026-03-05T18:10:00Z'

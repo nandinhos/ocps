@@ -1,0 +1,78 @@
+featureId: fase-6-multi-llm
+feature:
+  id: fase-6-multi-llm
+  title: 'Fase 6 — Multi-LLM'
+  description: >
+    Implementação de troca automática de LLM por rate limit sem perda de contexto.
+    Suporte a múltiplos provedores (Anthropic, OpenAI, Google).
+  acceptanceCriteria:
+    - 'Detecção automática de rate limit'
+    - 'Troca transparente entre LLMs'
+    - 'Contexto preservado durante troca'
+    - 'Fallback para modelos mais baratos'
+  status: done
+
+  sprint:
+    id: sprint-fase-6
+    capacityHours: 40
+    tasks:
+      # ============ Multi-LLM Manager ============
+      - id: t060
+        title: 'MultiLlmManager: contrato TypeScript'
+        description: 'Define interfaces LlmProvider, LlmConfig, fallback strategy'
+        completionCriteria: 'Contrato compila, suporta múltiplos provedores'
+        assignedAgent: tdd
+        status: done
+        completedAt: '2026-03-05T18:22:00Z'
+
+      - id: t061
+        title: 'MultiLlmManager: detecção de rate limit'
+        description: 'Detecta erros de rate limit automaticamente'
+        completionCriteria: 'Identifica rate limit em diferentes provedores'
+        assignedAgent: tdd
+        status: done
+        completedAt: '2026-03-05T18:23:00Z'
+
+      - id: t062
+        title: 'MultiLlmManager: estratégia de fallback'
+        description: 'Implementa fallback para modelos mais baratos'
+        completionCriteria: 'Troca para fallback sem perda de contexto'
+        assignedAgent: tdd
+        status: done
+        completedAt: '2026-03-05T18:23:00Z'
+
+      - id: t063
+        title: 'MultiLlmManager: testes'
+        description: 'Testes para fallback e rate limit detection'
+        completionCriteria: 'Mínimo 80% coverage'
+        assignedAgent: tdd
+        status: done
+        completedAt: '2026-03-05T18:24:00Z'
+
+      # ============ Validação ============
+      - id: t064
+        title: 'Validação end-to-end Fase 6'
+        description: 'Testa troca automática de LLM'
+        completionCriteria: 'Contexto preservado após troca'
+        assignedAgent: human
+        status: done
+        completedAt: '2026-03-05T18:24:00Z'
+
+decisions: []
+blockers: []
+skillsUsed: []
+
+llmCheckpoint:
+  model: null
+  tokensAccumulated: 0
+  lastSavedAt: null
+
+gates:
+  escopo:
+    status: approved
+    approvedBy: developer
+    checkedAt: '2026-03-05'
+    evidence: ['Roadmap proposto', 'Escopo aprovado pelo desenvolvedor']
+
+createdAt: '2026-03-05T18:25:00Z'
+updatedAt: '2026-03-05T18:25:00Z'

@@ -1,0 +1,103 @@
+featureId: fase-5-legacy-mode
+feature:
+  id: fase-5-legacy-mode
+  title: 'Fase 5 — Legacy Mode'
+  description: >
+    Implementação do LegacyAgent para análise arqueológica de sistemas legados.
+    Gera DRF (Document of Reverse-Engineered Features) aprovável.
+  acceptanceCriteria:
+    - 'LegacyAgent analiza código legado e gera behavior map'
+    - 'Identifica divergências entre comportamento e documentação'
+    - 'Gera DRF com testes de equivalência'
+    - 'Migration plan detalhado'
+  status: done
+
+  sprint:
+    id: sprint-fase-5
+    capacityHours: 40
+    tasks:
+      # ============ LegacyAgent ============
+      - id: t052
+        title: 'LegacyAgent: contrato TypeScript'
+        description: 'Define interfaces LegacyInput, LegacyOutput, BehaviorMap, DRF, MigrationPlan'
+        completionCriteria: 'Contrato compila, compatível com pipeline'
+        assignedAgent: tdd
+        status: done
+        completedAt: '2026-03-05T18:16:00Z'
+
+      - id: t053
+        title: 'LegacyAgent: análise de comportamento'
+        description: 'Analisa código legado e gera behavior map'
+        completionCriteria: 'Mapeia todas as funções e seus comportamentos'
+        assignedAgent: tdd
+        status: done
+        completedAt: '2026-03-05T18:17:00Z'
+
+      - id: t054
+        title: 'LegacyAgent: detecção de divergências'
+        description: 'Identifica gaps entre comportamento real e documentação'
+        completionCriteria: 'Lista todas as divergências encontradas'
+        assignedAgent: tdd
+        status: done
+        completedAt: '2026-03-05T18:18:00Z'
+
+      - id: t055
+        title: 'LegacyAgent: geração de DRF'
+        description: 'Gera Document of Reverse-Engineered Features'
+        completionCriteria: 'DRF em formato markdown com testes'
+        assignedAgent: tdd
+        status: done
+        completedAt: '2026-03-05T18:19:00Z'
+
+      - id: t056
+        title: 'LegacyAgent: migration plan'
+        description: 'Gera plano de migração detalhado'
+        completionCriteria: 'Plano com passos, riscos e timeline'
+        assignedAgent: tdd
+        status: done
+        completedAt: '2026-03-05T18:20:00Z'
+
+      - id: t057
+        title: 'LegacyAgent: testes'
+        description: 'Testes para análise e geração de DRF'
+        completionCriteria: 'Mínimo 80% coverage'
+        assignedAgent: tdd
+        status: done
+        completedAt: '2026-03-05T18:20:00Z'
+
+      # ============ Integração ============
+      - id: t058
+        title: 'Orchestrator: integra LegacyAgent ao pipeline'
+        description: 'Adiciona opção de análise legacy ao pipeline'
+        completionCriteria: 'Pipeline executa análise legacy quando solicitado'
+        assignedAgent: tdd
+        status: done
+        completedAt: '2026-03-05T18:20:00Z'
+
+      # ============ Validação ============
+      - id: t059
+        title: 'Validação end-to-end Fase 5'
+        description: 'Testa análise de módulo legado'
+        completionCriteria: 'DRF gerado e aprovável'
+        assignedAgent: human
+        status: done
+        completedAt: '2026-03-05T18:21:00Z'
+
+decisions: []
+blockers: []
+skillsUsed: []
+
+llmCheckpoint:
+  model: null
+  tokensAccumulated: 0
+  lastSavedAt: null
+
+gates:
+  escopo:
+    status: approved
+    approvedBy: developer
+    checkedAt: '2026-03-05'
+    evidence: ['Roadmap proposto', 'Escopo aprovado pelo desenvolvedor']
+
+createdAt: '2026-03-05T18:20:00Z'
+updatedAt: '2026-03-05T18:20:00Z'

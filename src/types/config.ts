@@ -1,6 +1,13 @@
 // Tipos de configuração global do OCPS e conexões MCP
 
-export type StackType = 'laravel' | 'typescript' | 'nodejs' | 'python' | 'unknown';
+export type StackType =
+  | 'laravel'
+  | 'typescript'
+  | 'nodejs'
+  | 'python'
+  | 'golang'
+  | 'rust'
+  | 'unknown';
 
 // União de literais + string permite autocomplete sem restringir modelos futuros
 export type LlmModel = 'claude-opus-4-5' | 'claude-sonnet-4-5' | 'claude-haiku-4-5' | string;
