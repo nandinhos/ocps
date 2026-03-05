@@ -134,11 +134,13 @@ decisions:
       Testes em tests/cli/init.test.ts. Detecção de stack: package.json > composer.json > requirements.txt.
       CLI funciona corretamente via npm run build + node dist/index.js.
     madeAt: '2026-03-05T15:42:00Z'
-  blockers:
-    - id: blocker-001
-      description: 'MCPs em modo simulação — ping HTTP real pendente para Fase 4'
-      resolvedInPhase: 4
-  skillsUsed: []
+
+blockers:
+  - id: blocker-001
+    description: 'MCPs em modo simulação — ping HTTP real pendente para Fase 4'
+    resolvedInPhase: 4
+
+skillsUsed: []
 
 llmCheckpoint:
   model: null

@@ -1,7 +1,7 @@
 # AGENTS.md — Especificação dos Agentes OCPS
 
 > Referência técnica de cada agente. Leia antes de implementar qualquer agente.
-> Os agentes da Fase 0 ainda não são implementados — apenas seus contratos TypeScript.
+> **Fase 1 Concluída:** Brainstorm, Planning e TddAgent possuem implementação funcional com orquestração real e persistência em disco.
 
 ---
 

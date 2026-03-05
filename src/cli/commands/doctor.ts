@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { readConfig } from './init.js';
 import { getVersion } from './version.js';
+import { McpBridge } from '../../mcp/mcp-bridge.js';
 
 interface DoctorResult {
   node: { status: 'ok' | 'error'; version?: string; message?: string };
@@ -51,38 +52,60 @@ function checkConfig(projectRoot: string): { status: 'ok' | 'error'; message?: s
   return { status: 'ok' };
 }
 
-function checkMcps(
+async function checkMcps(
   projectRoot: string,
-): { name: string; status: 'ok' | 'warning' | 'error'; message?: string }[] {
+): Promise<{ name: string; status: 'ok' | 'warning' | 'error'; message?: string }[]> {
   const config = readConfig(projectRoot);
   const results: { name: string; status: 'ok' | 'warning' | 'error'; message?: string }[] = [];
 
   if (!config) {
     return [
-      { name: 'basicMemory', status: 'warning', message: 'Config não carregada' },
-      { name: 'context7', status: 'warning', message: 'Config não carregada' },
-      { name: 'serena', status: 'warning', message: 'Config não carregada' },
-      { name: 'laravelBoost', status: 'warning', message: 'Config não carregada' },
+      { name: 'basicMemory', status: 'error', message: 'Config não carregada' },
+      { name: 'context7', status: 'error', message: 'Config não carregada' },
+      { name: 'serena', status: 'error', message: 'Config não carregada' },
+      { name: 'laravelBoost', status: 'error', message: 'Config não carregada' },
     ];
   }
 
-  const mcps = [
-    { name: 'basicMemory', enabled: config.mcp.basicMemory.enabled },
-    { name: 'context7', enabled: config.mcp.context7.enabled },
-    { name: 'serena', enabled: config.mcp.serena.enabled },
-    { name: 'laravelBoost', enabled: config.mcp.laravelBoost.enabled },
-  ];
+  const bridge = new McpBridge(config.mcp);
+  const pings = await bridge.ping();
 
-  for (const mcp of mcps) {
-    if (!mcp.enabled) {
-      results.push({ name: mcp.name, status: 'warning', message: 'Desabilitado' });
-    } else {
-      results.push({
-        name: mcp.name,
-        status: 'warning',
-        message: 'Simulação (ping não implementado)',
-      });
-    }
+  // Basic Memory
+  if (!config.mcp.basicMemory.enabled) {
+    results.push({ name: 'basicMemory', status: 'warning', message: 'Desabilitado' });
+  } else {
+    const ping = pings['basic-memory'];
+    results.push({
+      name: 'basicMemory',
+      status: ping?.connected ? 'ok' : 'error',
+      message: ping?.connected ? 'Conectado' : ping?.error || 'Offline',
+    });
+  }
+
+  // Context7
+  if (!config.mcp.context7.enabled) {
+    results.push({ name: 'context7', status: 'warning', message: 'Desabilitado' });
+  } else {
+    const ping = pings['context7'];
+    results.push({
+      name: 'context7',
+      status: ping?.connected ? 'ok' : 'error',
+      message: ping?.connected ? 'Conectado' : ping?.error || 'Offline',
+    });
+  }
+
+  // Serena
+  if (!config.mcp.serena.enabled) {
+    results.push({ name: 'serena', status: 'warning', message: 'Desabilitado' });
+  } else {
+    results.push({ name: 'serena', status: 'warning', message: 'Simulação (Fase 4)' });
+  }
+
+  // Laravel Boost
+  if (!config.mcp.laravelBoost.enabled) {
+    results.push({ name: 'laravelBoost', status: 'warning', message: 'Desabilitado' });
+  } else {
+    results.push({ name: 'laravelBoost', status: 'warning', message: 'Simulação (Fase 4)' });
   }
 
   return results;
@@ -93,11 +116,13 @@ export async function doctor(): Promise<void> {
 
   console.log('\n=== OCPS Doctor ===\n');
 
+  const mcpsResult = await checkMcps(projectRoot);
+
   const result: DoctorResult = {
     node: checkNodeVersion(),
     build: checkBuild(),
     config: checkConfig(projectRoot),
-    mcps: checkMcps(projectRoot),
+    mcps: mcpsResult,
   };
 
   const nodeIcon = result.node.status === 'ok' ? '✓' : '✗';

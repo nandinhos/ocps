@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "ocps": {
+      "command": "/home/nandodev/projects/ocps/node_modules/.bin/npm",
+      "args": [
+        "--prefix",
+        "/home/nandodev/projects/ocps",
+        "run",
+        "mcp"
+      ]
+    }
+  }
+}

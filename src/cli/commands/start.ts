@@ -3,6 +3,17 @@ import * as path from 'path';
 import * as readline from 'readline';
 import { readConfig } from './init.js';
 import { getVersion } from './version.js';
+import { Orchestrator } from '../../core/orchestrator.js';
+import { BrainstormAgent } from '../../agents/brainstorm.agent.js';
+import { PlanningAgent } from '../../agents/planning.agent.js';
+import { TddAgent } from '../../agents/tdd.agent.js';
+import { createLlmClient } from '../../core/llm-client.js';
+import { InteractiveGateEngine } from '../../core/gate-engine.js';
+import { McpBridge } from '../../mcp/mcp-bridge.js';
+import { loadSkill } from '../../skills/skill-loader.js';
+import type { AgentContext } from '../../types/agent.js';
+import type { Roadmap } from '../../types/roadmap.js';
+import { load as parseYaml } from 'js-yaml';
 
 interface RoadmapFeature {
   id: string;
@@ -33,7 +44,7 @@ export async function start(): Promise<void> {
 
   const roadmapDir = path.join(projectRoot, '.ocps', 'roadmap');
   const roadmapFiles = fs.existsSync(roadmapDir)
-    ? fs.readdirSync(roadmapDir).filter((f) => f.endsWith('.yaml'))
+    ? fs.readdirSync(roadmapDir).filter((f) => (f.endsWith('.yaml') || f.endsWith('.yml')) && f !== 'backlog.yaml')
     : [];
 
   if (roadmapFiles.length > 0) {
@@ -56,29 +67,112 @@ export async function start(): Promise<void> {
       const statusIcon =
         feature.status === 'done' ? '✓' : feature.status === 'in-progress' ? '●' : '○';
       console.log(`  ${statusIcon} ${feature.title} [${feature.status}]`);
-
-      const pendingTaskMatch = fileContent.match(
-        /- id:\s*(\S+)\n\s+title:\s*["']?([^"'\n]+)["']?\n\s+status:\s*pending/,
-      );
-      if (pendingTaskMatch) {
-        console.log(`\nPróxima tarefa: ${pendingTaskMatch[2]} (${pendingTaskMatch[1]})`);
-      }
     }
-  } else {
-    console.log('\nNenhuma feature encontrada no roadmap.');
-    console.log('Use "ocps init" e depois "ocps start" para iniciar uma sessão.\n');
   }
 
   console.log('\n───────────────────────────────────────────────────────────────');
-  console.log('\nAguardando confirmação para continuar...\n');
 
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
   });
 
-  rl.question('Pressione ENTER para continuar (ou ctrl+C para sair): ', () => {
-    rl.close();
-    console.log('\n✓ Sessão iniciada (stub - pipeline de agentes ainda não implementado)\n');
+  const rawIdea = await new Promise<string>((resolve) => {
+    rl.question('\nO que deseja desenvolver hoje? ', (answer) => {
+      rl.close(); // Fechar IMEDIATAMENTE após receber a ideia
+      resolve(answer);
+    });
   });
+
+  if (!rawIdea || rawIdea.trim().length < 5) {
+    console.log('\nAbortado: Ideia insuficiente.\n');
+    return;
+  }
+
+  // Inicializar componentes para o Orchestrator
+  const llmClient = createLlmClient(config);
+  const brainstorm = new BrainstormAgent();
+  const planning = new PlanningAgent();
+  const tdd = new TddAgent(llmClient);
+  const orchestrator = new Orchestrator(brainstorm, planning, tdd);
+  const gateEngine = new InteractiveGateEngine();
+  orchestrator.setGateEngine(gateEngine);
+
+  // Preparar Contexto
+  const bridge = new McpBridge(config.mcp);
+  const mcpStatus = await bridge.connect();
+
+  // Carregar skills globais iniciais (exemplo simplificado)
+  const skillsToLoad = ['tdd-typescript', 'elicitacao-requisitos'];
+  const loadedSkills = await Promise.all(
+    skillsToLoad.map(async (s) => {
+      const res = await loadSkill(s, projectRoot);
+      return res.ok ? res.value : null;
+    })
+  );
+
+  // Carregar roadmap atual se existir (ou criar um vazio)
+  let currentRoadmap: Roadmap;
+  try {
+    const fase0Path = path.join(roadmapDir, 'fase-0.yaml');
+    if (fs.existsSync(fase0Path)) {
+      const content = fs.readFileSync(fase0Path, 'utf-8');
+      currentRoadmap = parseYaml(content) as Roadmap;
+    } else {
+      currentRoadmap = {
+        featureId: 'new-feature',
+        feature: {
+          id: 'new-feature',
+          title: '',
+          description: '',
+          acceptanceCriteria: [],
+          status: 'pending',
+          sprint: { id: 'sprint-1', tasks: [], capacityHours: 40 }
+        },
+        decisions: [],
+        blockers: [],
+        skillsUsed: [],
+        llmCheckpoint: { model: config.primaryModel, tokensAccumulated: 0, lastSavedAt: null },
+        gates: {},
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+    }
+  } catch (e) {
+    console.error(`Erro ao carregar roadmap: ${e}`);
+    rl.close();
+    return;
+  }
+
+  const ctx: AgentContext = {
+    projectRoot,
+    config,
+    roadmap: currentRoadmap,
+    skills: loadedSkills.filter(s => s !== null) as any[],
+    sessionId: `session-${Date.now()}`,
+    mcpConnections: mcpStatus.ok ? mcpStatus.value : {
+      basicMemory: { name: 'basic-memory', enabled: false, connected: false },
+      context7: { name: 'context7', enabled: false, connected: false }
+    }
+  };
+
+  console.log('\n🚀 Iniciando pipeline de agentes...\n');
+
+  try {
+    const result = await orchestrator.execute({
+      rawIdea,
+      projectContext: `Stack: ${config.stack}, Project: ${config.projectName}`
+    }, ctx);
+
+    if (result.ok) {
+      console.log('\n✅ Pipeline concluído com sucesso!');
+      console.log(`Tokens acumulados: ${result.output?.totalTokens}`);
+    } else {
+      console.error(`\n❌ Erro no pipeline: ${result.error}`);
+    }
+  } catch (e) {
+    console.error(`\n❌ Erro inesperado no pipeline: ${e}`);
+  }
+
+  rl.close();
 }

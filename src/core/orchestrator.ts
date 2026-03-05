@@ -1,3 +1,5 @@
+import * as fs from 'fs';
+import * as path from 'path';
 import type { Agent, AgentContext } from '../types/agent.js';
 import type { BacklogItem, Feature, Task } from '../types/roadmap.js';
 import type { BrainstormInput, BrainstormOutput } from '../agents/brainstorm.agent.js';
@@ -125,6 +127,23 @@ export class Orchestrator {
         const approved = await this.gateEngine.confirm('Aprovar código gerado?', tddResult.output);
         if (!approved) {
           return { ok: false, error: 'Gate reprovado pelo desenvolvedor' };
+        }
+
+        // PERSISTÊNCIA REAL APÓS APROVAÇÃO
+        const out = tddResult.output!;
+        console.log(`\n[Orchestrator] Escrevendo arquivos no disco...`);
+        
+        try {
+          if (!fs.existsSync(path.dirname(out.testFile))) fs.mkdirSync(path.dirname(out.testFile), { recursive: true });
+          if (!fs.existsSync(path.dirname(out.implementationFile))) fs.mkdirSync(path.dirname(out.implementationFile), { recursive: true });
+          
+          fs.writeFileSync(out.testFile, out.testContent, 'utf-8');
+          fs.writeFileSync(out.implementationFile, out.implementationContent, 'utf-8');
+          
+          console.log(`✓ Criado: ${out.testFile}`);
+          console.log(`✓ Criado: ${out.implementationFile}`);
+        } catch (e) {
+          return { ok: false, error: `Falha ao escrever arquivos: ${e}` };
         }
       }
     }

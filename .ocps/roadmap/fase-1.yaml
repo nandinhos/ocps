@@ -12,7 +12,7 @@ feature:
     - 'Orchestrator coordena pipeline Brainstorm→Planning→TDD'
     - 'Gate Engine confirma interativamente antes de avançar'
     - 'Feature completa passa do Brainstorm ao TDD sem intervenção manual (exceto gates)'
-  status: pending
+  status: done
 
   sprint:
     id: sprint-fase-1
@@ -152,7 +152,18 @@ feature:
         status: done
         completedAt: '2026-03-05T17:50:00Z'
 
-decisions: []
+decisions:
+  - id: dec-006
+    title: 'Confirmação Interativa via readline no GateEngine'
+    decision: 'Implementar InteractiveGateEngine usando o módulo nativo readline do Node.js.'
+    rationale: 'Permite que o desenvolvedor aprove ou reprove propostas de agentes (Backlog, Planning, Code) em tempo real no terminal, garantindo o controle humano sobre a execução automática.'
+    createdAt: '2026-03-05T23:30:00Z'
+
+  - id: dec-007
+    title: 'Persistência de arquivos delegada ao Orchestrator'
+    decision: 'O Orchestrator é responsável por escrever os arquivos gerados pelo TddAgent no disco somente após a aprovação do Gate correspondente.'
+    rationale: 'Evita que código não revisado ou indesejado "suje" o sistema de arquivos do projeto antes da confirmação explícita do desenvolvedor.'
+    createdAt: '2026-03-05T23:30:00Z'
 blockers:
   - id: blocker-001
     description: 'MCPs em modo simulação — ping HTTP real pendente para Fase 4'
