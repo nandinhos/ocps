@@ -1,11 +1,85 @@
 import { Command } from 'commander';
 import * as path from 'path';
-import { writeConfig, addToGitignore, configExists } from './commands/init.js';
+import { writeConfig, addToGitignore, configExists, generateMcpJson } from './commands/init.js';
 import { getVersion } from './commands/version.js';
 import { doctor } from './commands/doctor.js';
 import { start } from './commands/start.js';
 import { mcpSetup } from './commands/mcp.js';
 import { StackDetector } from '../core/stack-detector.js';
+
+interface EnvironmentCheck {
+  name: string;
+  required: boolean;
+  version?: string;
+  installed: boolean;
+}
+
+async function checkEnvironment(stack: string): Promise<EnvironmentCheck[]> {
+  const checks: EnvironmentCheck[] = [];
+
+  const nodeCheck: EnvironmentCheck = { name: 'Node.js', required: true, installed: false };
+  try {
+    const result = await import('child_process').then((fs) => {
+      return fs.execSync('node --version', {
+        encoding: 'utf-8',
+        stdio: ['ignore', 'pipe', 'ignore'],
+      });
+    });
+    nodeCheck.installed = true;
+    nodeCheck.version = result.trim();
+  } catch {}
+  checks.push(nodeCheck);
+
+  if (stack === 'laravel' || stack === 'php') {
+    const phpCheck: EnvironmentCheck = { name: 'PHP', required: true, installed: false };
+    try {
+      const result = await import('child_process').then((fs) => {
+        return fs.execSync('php --version', {
+          encoding: 'utf-8',
+          stdio: ['ignore', 'pipe', 'ignore'],
+        });
+      });
+      phpCheck.installed = true;
+      phpCheck.version = result.split('\n')[0].replace('PHP ', '').split(' ')[0];
+    } catch {}
+    checks.push(phpCheck);
+  }
+
+  if (stack === 'nodejs' || stack === 'typescript') {
+    const npmCheck: EnvironmentCheck = { name: 'npm', required: true, installed: false };
+    try {
+      const result = await import('child_process').then((fs) => {
+        return fs.execSync('npm --version', {
+          encoding: 'utf-8',
+          stdio: ['ignore', 'pipe', 'ignore'],
+        });
+      });
+      npmCheck.installed = true;
+      npmCheck.version = result.trim();
+    } catch {}
+    checks.push(npmCheck);
+  }
+
+  return checks;
+}
+
+function printEnvironmentCheck(checks: EnvironmentCheck[]): void {
+  console.log('\n═══ Verificação de Ambiente ═══');
+  let allPassed = true;
+  for (const check of checks) {
+    const status = check.installed ? '✓' : '✗';
+    const version = check.version ? ` (${check.version})` : '';
+    console.log(`  ${status} ${check.name}${version}`);
+    if (!check.installed && check.required) {
+      allPassed = false;
+    }
+  }
+  if (!allPassed) {
+    console.log(
+      '\n  ⚠️ Alguns requisitos não foram encontrados. Execute "ocps doctor" para detalhes.',
+    );
+  }
+}
 
 export function createProgram(): Command {
   const program = new Command();
@@ -38,9 +112,18 @@ export function createProgram(): Command {
       console.log(`Natureza: ${result.nature}`);
       if (result.phpVersion) console.log(`PHP Version: ${result.phpVersion}`);
 
-      if (result.nature === 'brownfield' && result.phpVersion && parseFloat(result.phpVersion) >= 8.4) {
+      const envChecks = await checkEnvironment(result.stack);
+      printEnvironmentCheck(envChecks);
+
+      if (
+        result.nature === 'brownfield' &&
+        result.phpVersion &&
+        parseFloat(result.phpVersion) >= 8.4
+      ) {
         console.log('\n💡 Sugestão: Este é um projeto Brownfield moderno (PHP >= 8.4).');
-        console.log('   Considere habilitar o MCP Serena para indexação de código e economia de tokens.');
+        console.log(
+          '   Considere habilitar o MCP Serena para indexação de código e economia de tokens.',
+        );
       }
 
       if (result.nature === 'greenfield') {
@@ -72,6 +155,9 @@ export function createProgram(): Command {
 
       writeConfig(projectRoot, config);
       addToGitignore(projectRoot);
+
+      generateMcpJson(projectRoot, result.stack, result.phpVersion);
+      console.log('✓ .mcp.json criado');
 
       console.log('\n✓ Configuração criada em .ocps/config.yaml');
       console.log('\nPróximos passos:');

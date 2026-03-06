@@ -64,12 +64,16 @@ export function readConfig(projectRoot: string): OcpsConfig | null {
 }
 
 export function writeConfig(projectRoot: string, config: OcpsConfig): void {
-  const configDir = path.join(projectRoot, OCPS_DIR);
-  if (!fs.existsSync(configDir)) {
-    fs.mkdirSync(configDir, { recursive: true });
+  const ocpsDirs = ['roadmap', 'skills', 'memory'];
+
+  for (const dir of ocpsDirs) {
+    const dirPath = path.join(projectRoot, OCPS_DIR, dir);
+    if (!fs.existsSync(dirPath)) {
+      fs.mkdirSync(dirPath, { recursive: true });
+    }
   }
 
-  const configPath = path.join(configDir, CONFIG_FILE);
+  const configPath = path.join(projectRoot, OCPS_DIR, CONFIG_FILE);
 
   const yamlContent = [
     `version: "${config.version}"`,
@@ -126,4 +130,63 @@ export function addToGitignore(projectRoot: string): void {
 export function configExists(projectRoot: string): boolean {
   const configPath = path.join(projectRoot, OCPS_DIR, CONFIG_FILE);
   return fs.existsSync(configPath);
+}
+
+export function generateMcpJson(projectRoot: string, stack: StackType, phpVersion?: string): void {
+  const mcpPath = path.join(projectRoot, '.mcp.json');
+
+  if (fs.existsSync(mcpPath)) {
+    return;
+  }
+
+  const ocpsPath =
+    process.argv[1]?.replace(/dist\/index\.js$/, 'dist/mcp/ocps-mcp-server.js') ||
+    '/home/nandodev/projects/ocps/dist/mcp/ocps-mcp-server.js';
+
+  const servers: Record<string, object> = {
+    ocps: {
+      command: 'node',
+      args: [ocpsPath],
+    },
+  };
+
+  if (stack === 'laravel') {
+    const dockerCmd =
+      phpVersion && parseFloat(phpVersion) >= 8.4
+        ? [
+            'docker',
+            'exec',
+            '-i',
+            'laravel.test-1',
+            'php',
+            '/var/www/html/artisan',
+            'mcp:start',
+            'laravel-boost',
+          ]
+        : [
+            'docker',
+            'compose',
+            'exec',
+            '-T',
+            '-e',
+            'WWWUSER=1000',
+            '-e',
+            'WWWGROUP=1000',
+            'laravel.test',
+            'php',
+            'artisan',
+            'boost:mcp',
+          ];
+
+    servers['laravel-boost'] = {
+      command: dockerCmd[0],
+      args: dockerCmd.slice(1),
+    };
+  }
+
+  const mcpContent = {
+    mcpServers: servers,
+  };
+
+  fs.writeFileSync(mcpPath, JSON.stringify(mcpContent, null, 2), 'utf-8');
 }
