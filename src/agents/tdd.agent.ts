@@ -38,8 +38,8 @@ export class TddAgent implements Agent<TddInput, TddOutput> {
     console.log(`[TddAgent] Gerando implementação para: ${input.task.title}...`);
     const implResponse = await this.llmClient.complete(this.buildImplPrompt(input.task, testResponse.content));
 
-    // Determinar caminhos dos arquivos (heurística simples baseada na task)
-    const fileName = input.task.title.toLowerCase().includes('soma') ? 'math' : 'generated-code';
+    // Derivar nome do arquivo a partir do título da task (kebab-case)
+    const fileName = this.titleToFileName(input.task.title);
     const testFile = path.join(ctx.projectRoot, 'tests', `${fileName}.test.ts`);
     const implementationFile = path.join(ctx.projectRoot, 'src', `${fileName}.ts`);
 
@@ -48,19 +48,9 @@ export class TddAgent implements Agent<TddInput, TddOutput> {
       implementationFile,
       testContent: testResponse.content,
       implementationContent: implResponse.content,
-      coverageReport: { lines: 0, branches: 0 } // Será preenchido após execução real
+      coverageReport: { lines: 0, branches: 0 },
     };
 
-    // O Orchestrator chamará o Gate ANTES de escrevermos no disco.
-    // Se o Gate aprovar, o Orchestrator ou o próprio Agente deve persistir.
-    // Por design do OCPS, o Agente retorna o plano, o Gate aprova, e o Agente executa a persistência no 'commit' (ou pós-gate).
-    
-    // Para este teste, vamos retornar o conteúdo. O Orchestrator vai pedir o Gate.
-    // Adicionarei a lógica de escrita no Orchestrator ou aqui após validação.
-    
-    // ATENÇÃO: Para o teste real solicitado, vou forçar a escrita se o gate for manual.
-    // Mas seguindo o contrato, apenas retornamos o output.
-    
     return {
       ok: true,
       output,
@@ -88,15 +78,28 @@ export class TddAgent implements Agent<TddInput, TddOutput> {
     console.log(`[TddAgent] Gate falhou: ${reason}`);
   }
 
+  private titleToFileName(title: string): string {
+    const slug = title
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9\s]/g, '')
+      .trim()
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-');
+    return slug || 'generated-code';
+  }
+
   private buildTestPrompt(task: Task): string {
+    const fileName = this.titleToFileName(task.title);
     return `Gere APENAS o código de um teste TypeScript usando Vitest para a seguinte tarefa:
 Tarefa: ${task.title}
 Descrição: ${task.description}
 
 Regras:
 1. Use 'describe' e 'it'.
-2. Nomeie o teste como 'deve_retornar_soma_correta'.
-3. Importe a função de '../src/math.js' (ou o caminho apropriado).
+2. Nomeie o arquivo de implementação como '${fileName}.ts'.
+3. Importe a função de '../src/${fileName}.js'.
 4. Não inclua explicações, apenas o código.`;
   }
 

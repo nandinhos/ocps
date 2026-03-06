@@ -111,6 +111,38 @@ describe('TddAgent', () => {
       expect(result.output?.coverageReport).toBeDefined();
     });
 
+    it('deve_derivar_filename_do_titulo_da_task', async () => {
+      const task: Task = {
+        id: 'task-001',
+        title: 'Criar sistema de autenticação',
+        description: 'Auth system',
+        completionCriteria: 'Auth works',
+        assignedAgent: 'tdd',
+        status: 'pending',
+      };
+
+      const result = await agent.execute({ task }, mockCtx);
+
+      expect(result.output?.testFile).toContain('criar-sistema-de-autenticacao');
+      expect(result.output?.implementationFile).toContain('criar-sistema-de-autenticacao');
+    });
+
+    it('deve_nao_usar_heuristica_hardcoded', async () => {
+      const task: Task = {
+        id: 'task-001',
+        title: 'Implementar feature de pagamento',
+        description: 'Payment feature',
+        completionCriteria: 'Payment works',
+        assignedAgent: 'tdd',
+        status: 'pending',
+      };
+
+      const result = await agent.execute({ task }, mockCtx);
+
+      expect(result.output?.testFile).not.toContain('generated-code');
+      expect(result.output?.testFile).toContain('implementar-feature-de-pagamento');
+    });
+
     it('deve_retornar_tokens_used', async () => {
       const task: Task = {
         id: 'task-001',
