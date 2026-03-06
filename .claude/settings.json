@@ -17,7 +17,12 @@
       "Bash(NODE=\"$HOME/.nvm/versions/node/v24.13.0/bin/node\")",
       "Bash(PATH=\"$HOME/.nvm/versions/node/v24.13.0/bin:$PATH\" $NODE $NPM --prefix /home/nandodev/projects/ocps run test:*)",
       "Bash(/home/nandodev/.nvm/versions/node/v24.13.0/bin/node /home/nandodev/.nvm/versions/node/v24.13.0/bin/npm:*)",
-      "Bash(/home/nandodev/.nvm/versions/node/v24.13.0/bin/node:*)"
+      "Bash(/home/nandodev/.nvm/versions/node/v24.13.0/bin/node:*)",
+      "Bash(export PATH=\"$HOME/.nvm/versions/node/v24.13.0/bin:$PATH\")",
+      "Bash(export PATH:*)",
+      "Bash(npm test:*)",
+      "Read(//home/nandodev/projects/ocps/**)",
+      "Bash(done)"
     ]
   }
 }

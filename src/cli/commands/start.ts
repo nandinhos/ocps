@@ -7,7 +7,9 @@ import { Orchestrator } from '../../core/orchestrator.js';
 import { BrainstormAgent } from '../../agents/brainstorm.agent.js';
 import { PlanningAgent } from '../../agents/planning.agent.js';
 import { TddAgent } from '../../agents/tdd.agent.js';
-import { createLlmClient } from '../../core/llm-client.js';
+import { CodeReviewAgent } from '../../agents/code-review.agent.js';
+import { QaAgent } from '../../agents/qa.agent.js';
+import { createLlmClientWithFallback } from '../../core/llm-client.js';
 import { InteractiveGateEngine } from '../../core/gate-engine.js';
 import { McpBridge } from '../../mcp/mcp-bridge.js';
 import { loadSkill } from '../../skills/skill-loader.js';
@@ -90,11 +92,13 @@ export async function start(): Promise<void> {
   }
 
   // Inicializar componentes para o Orchestrator
-  const llmClient = createLlmClient(config);
-  const brainstorm = new BrainstormAgent();
-  const planning = new PlanningAgent();
+  const llmClient = createLlmClientWithFallback(config);
+  const brainstorm = new BrainstormAgent(llmClient);
+  const planning = new PlanningAgent(llmClient);
   const tdd = new TddAgent(llmClient);
-  const orchestrator = new Orchestrator(brainstorm, planning, tdd);
+  const codeReview = new CodeReviewAgent(llmClient);
+  const qa = new QaAgent();
+  const orchestrator = new Orchestrator(brainstorm, planning, tdd, codeReview, qa);
   const gateEngine = new InteractiveGateEngine();
   orchestrator.setGateEngine(gateEngine);
 
@@ -148,7 +152,7 @@ export async function start(): Promise<void> {
     projectRoot,
     config,
     roadmap: currentRoadmap,
-    skills: loadedSkills.filter(s => s !== null) as any[],
+    skills: loadedSkills.filter((s): s is NonNullable<typeof s> => s !== null),
     sessionId: `session-${Date.now()}`,
     mcpConnections: mcpStatus.ok ? mcpStatus.value : {
       basicMemory: { name: 'basic-memory', enabled: false, connected: false },
@@ -156,7 +160,7 @@ export async function start(): Promise<void> {
     }
   };
 
-  console.log('\n🚀 Iniciando pipeline de agentes...\n');
+  console.log('\n>>> Iniciando pipeline de agentes...\n');
 
   try {
     const result = await orchestrator.execute({
@@ -165,13 +169,13 @@ export async function start(): Promise<void> {
     }, ctx);
 
     if (result.ok) {
-      console.log('\n✅ Pipeline concluído com sucesso!');
+      console.log('\n[OK] Pipeline concluído com sucesso!');
       console.log(`Tokens acumulados: ${result.output?.totalTokens}`);
     } else {
-      console.error(`\n❌ Erro no pipeline: ${result.error}`);
+      console.error(`\n[ERRO] Pipeline: ${result.error}`);
     }
   } catch (e) {
-    console.error(`\n❌ Erro inesperado no pipeline: ${e}`);
+    console.error(`\n[ERRO] Inesperado no pipeline: ${e}`);
   }
 
   rl.close();

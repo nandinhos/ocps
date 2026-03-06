@@ -3,6 +3,8 @@ import { Orchestrator, type PipelineInput } from '../../src/core/orchestrator.js
 import { BrainstormAgent } from '../../src/agents/brainstorm.agent.js';
 import { PlanningAgent } from '../../src/agents/planning.agent.js';
 import { TddAgent } from '../../src/agents/tdd.agent.js';
+import { CodeReviewAgent } from '../../src/agents/code-review.agent.js';
+import { QaAgent } from '../../src/agents/qa.agent.js';
 import { MockLlmClient } from '../../src/core/llm-client.js';
 import type { AgentContext } from '../../src/types/agent.js';
 import type { Skill } from '../../src/types/skill.js';
@@ -70,7 +72,7 @@ describe('Orchestrator', () => {
     };
   });
 
-  describe('execute', () => {
+  describe('execute — pipeline basico (3 fases)', () => {
     it('deve_executar_pipeline_completo', async () => {
       const input: PipelineInput = {
         rawIdea: 'Criar sistema de login com OAuth2',
@@ -95,6 +97,49 @@ describe('Orchestrator', () => {
 
       expect(result.output?.backlogItem).toBeDefined();
       expect(result.output?.feature).toBeDefined();
+    });
+  });
+
+  describe('execute — pipeline completo (5 fases)', () => {
+    it('deve_executar_code_review_e_qa_apos_tdd', async () => {
+      const mockLlm = new MockLlmClient();
+      const fullOrchestrator = new Orchestrator(
+        new BrainstormAgent(),
+        new PlanningAgent(),
+        new TddAgent(mockLlm),
+        new CodeReviewAgent(mockLlm),
+        new QaAgent(),
+      );
+
+      const result = await fullOrchestrator.execute(
+        { rawIdea: 'Criar sistema de login com OAuth2', projectContext: 'TypeScript' },
+        mockCtx,
+      );
+
+      expect(result.ok).toBe(true);
+      expect(result.output?.phasesCompleted).toContain('code-review');
+      expect(result.output?.phasesCompleted).toContain('qa');
+      expect(result.output?.reviewOutput).toBeDefined();
+      expect(result.output?.qaOutput).toBeDefined();
+    });
+
+    it('deve_ter_review_aprovado_sem_blockers', async () => {
+      const mockLlm = new MockLlmClient();
+      const fullOrchestrator = new Orchestrator(
+        new BrainstormAgent(),
+        new PlanningAgent(),
+        new TddAgent(mockLlm),
+        new CodeReviewAgent(mockLlm),
+        new QaAgent(),
+      );
+
+      const result = await fullOrchestrator.execute(
+        { rawIdea: 'Feature simples', projectContext: 'TypeScript' },
+        mockCtx,
+      );
+
+      expect(result.output?.reviewOutput?.approved).toBe(true);
+      expect(result.output?.qaOutput?.approved).toBe(true);
     });
   });
 });

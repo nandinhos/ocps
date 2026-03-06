@@ -55,12 +55,12 @@ describe('SessionManager', () => {
     });
   });
 
-  describe('updateLlamaCheckpoint', () => {
+  describe('updateLlmCheckpoint', () => {
     it('deve_atualizar_checkpoint', () => {
       const config = { primaryModel: 'claude-sonnet-4-5', projectName: 'test' };
       const session = manager.createSession(testDir, config);
 
-      manager.updateLlamaCheckpoint(session.sessionId, 'claude-opus-4-5', 100, {
+      manager.updateLlmCheckpoint(session.sessionId, 'claude-opus-4-5', 100, {
         role: 'user',
         content: 'Test message',
       });
@@ -86,7 +86,7 @@ describe('SessionManager', () => {
       const config = { primaryModel: 'claude-sonnet-4-5', projectName: 'test' };
       const session = manager.createSession(testDir, config);
 
-      manager.updateLlamaCheckpoint(session.sessionId, 'claude-opus-4-5', 100, {
+      manager.updateLlmCheckpoint(session.sessionId, 'claude-opus-4-5', 100, {
         role: 'user',
         content: 'Test message',
       });

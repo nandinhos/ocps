@@ -6,7 +6,7 @@
 
 ## 1. O que é o OCPS?
 
-O **OCPS** (Orquestrador Cognitivo de Projetos de Software) é um framework CLI que automatiza o ciclo completo de desenvolvimento de software usando agentes de IA especializados. Ele funciona como um "copiloto inteligente" que coordena múltiplos agentes para transformar uma ideia em código投产, com gates de qualidade em cada etapa.
+O **OCPS** (Orquestrador Cognitivo de Projetos de Software) é um framework CLI que automatiza o ciclo completo de desenvolvimento de software usando agentes de IA especializados. Ele funciona como um "copiloto inteligente" que coordena múltiplos agentes para transformar uma ideia em código, com gates de qualidade em cada etapa.
 
 ### Definição Formal
 

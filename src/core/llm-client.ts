@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import type { OcpsConfig } from '../types/config.js';
+import { MultiLlmManager } from './multi-llm-manager.js';
 
 export interface LlmResponse {
   content: string;
@@ -16,7 +17,7 @@ export class AnthropicClient implements LlmClient {
   private temperature: number;
   private maxTokens: number;
 
-  constructor(config: OcpsConfig) {
+  constructor(config: OcpsConfig, modelOverride?: string) {
     const apiKey = process.env.ANTHROPIC_API_KEY;
 
     if (!apiKey) {
@@ -24,7 +25,7 @@ export class AnthropicClient implements LlmClient {
     }
 
     this.client = new Anthropic({ apiKey });
-    this.model = config.primaryModel || 'claude-sonnet-4-5';
+    this.model = modelOverride ?? config.primaryModel ?? 'claude-sonnet-4-5';
     this.temperature = 0.7;
     this.maxTokens = 4096;
   }
@@ -52,15 +53,21 @@ export class AnthropicClient implements LlmClient {
 
 export class MockLlmClient implements LlmClient {
   private responses: Map<string, string>;
+  private defaultResponse: string;
 
-  constructor(responses: Record<string, string> = {}) {
+  constructor(responses: Record<string, string> = {}, defaultResponse = '') {
     this.responses = new Map(Object.entries(responses));
+    this.defaultResponse = defaultResponse;
   }
 
   async complete(prompt: string): Promise<LlmResponse> {
     const cached = this.responses.get(prompt);
     if (cached) {
       return { content: cached, tokensUsed: 100 };
+    }
+
+    if (this.defaultResponse) {
+      return { content: this.defaultResponse, tokensUsed: 100 };
     }
 
     return {
@@ -72,11 +79,42 @@ export class MockLlmClient implements LlmClient {
   setResponse(prompt: string, response: string): void {
     this.responses.set(prompt, response);
   }
+
+  setDefaultResponse(response: string): void {
+    this.defaultResponse = response;
+  }
 }
 
 export function createLlmClient(config: OcpsConfig, useMock = false): LlmClient {
   if (useMock || !process.env.ANTHROPIC_API_KEY) {
+    if (!useMock) {
+      console.warn('[OCPS] ANTHROPIC_API_KEY nao configurada — usando MockLlmClient (respostas simuladas)');
+    }
     return new MockLlmClient();
   }
   return new AnthropicClient(config);
+}
+
+export function createLlmClientWithFallback(config: OcpsConfig): LlmClient {
+  if (!config.fallbackModel) {
+    return createLlmClient(config);
+  }
+
+  const hasApiKey = Boolean(process.env.ANTHROPIC_API_KEY);
+  const primary: LlmClient = hasApiKey ? new AnthropicClient(config) : new MockLlmClient();
+  const fallback: LlmClient = hasApiKey
+    ? new AnthropicClient(config, config.fallbackModel)
+    : new MockLlmClient();
+
+  const manager = new MultiLlmManager();
+  manager.addProvider('anthropic', primary);
+  manager.addProvider('openai', fallback);
+  manager.setStrategy({
+    primary: { provider: 'anthropic', model: config.primaryModel, apiKey: '' },
+    fallback: { provider: 'openai', model: config.fallbackModel, apiKey: '' },
+    priority: ['anthropic', 'openai'],
+  });
+
+  console.log(`[LLM] MultiLlmManager: ${config.primaryModel} → ${config.fallbackModel} (fallback em rate limit)`);
+  return manager;
 }

@@ -84,7 +84,7 @@ export class SessionManager {
     }
   }
 
-  updateLlamaCheckpoint(
+  updateLlmCheckpoint(
     sessionId: string,
     model: string,
     tokens: number,
