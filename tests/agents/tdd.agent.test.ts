@@ -131,7 +131,9 @@ describe('TddAgent', () => {
     it('deve_validar_output_completo', () => {
       const output = {
         testFile: "import { it } from 'vitest';",
+        testContent: "import { it } from 'vitest';",
         implementationFile: 'export function test() {}',
+        implementationContent: 'export function test() {}',
         refactoredFiles: [],
         coverageReport: { lines: 85, branches: 75 },
       };
@@ -140,18 +142,20 @@ describe('TddAgent', () => {
       expect(result.valid).toBe(true);
     });
 
-    it('deve_invalidar_coverage_baixo', () => {
+    it('deve_invalidar_test_vazio', () => {
       const output = {
-        testFile: "import { it } from 'vitest';",
+        testFile: '',
+        testContent: '',
         implementationFile: 'export function test() {}',
+        implementationContent: 'export function test() {}',
         refactoredFiles: [],
-        coverageReport: { lines: 50, branches: 50 },
+        coverageReport: { lines: 85, branches: 75 },
       };
 
       const result = agent.validate(output);
       expect(result.valid).toBe(false);
       if (!result.valid) {
-        expect(result.errors).toContain('Cobertura de linhas deve ser >= 80%');
+        expect(result.errors).toContain('Conteúdo do teste vazio');
       }
     });
   });

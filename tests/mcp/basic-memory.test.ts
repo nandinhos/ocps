@@ -24,7 +24,7 @@ describe('BasicMemoryClient.ping()', () => {
 
     expect(result.ok).toBe(false);
     if (!result.ok) {
-      expect(result.error.message).toContain('Falha ao conectar');
+      expect(result.error.message).toContain('Offline');
     }
   });
 
@@ -35,7 +35,7 @@ describe('BasicMemoryClient.ping()', () => {
 
     expect(result.ok).toBe(false);
     if (!result.ok) {
-      expect(result.error.message).toContain('desabilitado');
+      expect(result.error.message).toContain('Desabilitado');
     }
   });
 

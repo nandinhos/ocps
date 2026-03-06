@@ -25,7 +25,7 @@ export interface OcpsConfig {
   version: string;
   projectName: string;
   stack: StackType;
-  nature: ProjectNature;
+  nature?: ProjectNature;
   phpVersion?: string;
   primaryModel: LlmModel;
   fallbackModel?: LlmModel;

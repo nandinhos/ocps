@@ -2,6 +2,18 @@ import * as readline from 'readline';
 import { readConfig, writeConfig } from './init.js';
 import { McpBridge } from '../../mcp/mcp-bridge.js';
 
+function createRl(): readline.Interface {
+  return readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+    terminal: true,
+  });
+}
+
+function isInteractive(): boolean {
+  return process.stdin.isTTY && process.stdout.isTTY;
+}
+
 export async function mcpSetup(): Promise<void> {
   const projectRoot = process.cwd();
   const config = readConfig(projectRoot);
@@ -11,101 +23,106 @@ export async function mcpSetup(): Promise<void> {
     return;
   }
 
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-  });
+  if (!isInteractive()) {
+    console.error(`\n✗ Este comando requer modo interativo. Execute no terminal.`);
+    return;
+  }
 
-  const ask = (query: string): Promise<string> => new Promise((resolve) => rl.question(query, resolve));
+  const rl = createRl();
 
-  console.log(`\n═══════════════════════════════════════════════════════════════`);
-  console.log(`  OCPS MCP Setup Wizard (Intelligence Mode)`);
-  console.log(`═══════════════════════════════════════════════════════════════\n`);
+  const ask = (query: string): Promise<string> => {
+    return new Promise((resolve) => {
+      rl.question(query, (answer) => {
+        resolve(answer || '');
+      });
+    });
+  };
 
-  // Instanciar a Bridge para testar conexões atuais
-  const bridge = new McpBridge(config.mcp);
-  const pings = await bridge.ping();
+  try {
+    console.log(`\n═══════════════════════════════════════════════════════════════`);
+    console.log(`  OCPS MCP Setup Wizard (Intelligence Mode)`);
+    console.log(`═══════════════════════════════════════════════════════════════\n`);
 
-  // --- Basic Memory ---
-  console.log(`[1/4] Basic Memory`);
-  const bmStatus = pings['basic-memory'];
-  if (bmStatus?.connected) {
-    console.log(`✓ Já está configurado e FUNCIONAL em: ${config.mcp.basicMemory.url || 'http://localhost:3000'}`);
-    const reconf = await ask(`Deseja reconfigurar mesmo assim? (y/N): `);
-    if (!reconf.toLowerCase().startsWith('y')) {
+    console.log(`📁 Projeto: ${config.projectName}`);
+    console.log(`📍 Caminho: ${projectRoot}\n`);
+
+    console.log(`═══ O que são MCPs? ═══`);
+    console.log(`MCPs (Model Context Protocol) são serviços que extends a IA com:`);
+    console.log(`  • Basic Memory  → Memória persistente entre sessões`);
+    console.log(`  • Context7      → Busca em documentação`);
+    console.log(`  • Serena        → Indexação do seu código`);
+    console.log(`  • Laravel Boost → Comandos Laravel específicos para IA\n`);
+
+    console.log(`Para rodar os serviços, abra outro terminal e execute:`);
+    console.log(`  • npx @anthropic-basic-memory/serve  (porta 3000)`);
+    console.log(`  • npx @context7/mcp-server           (porta 3001)\n`);
+
+    const bridge = new McpBridge(config.mcp);
+    const pings = await bridge.ping();
+
+    // --- Basic Memory ---
+    console.log(`[1/4] Basic Memory`);
+    console.log(`   O que é: Memória persistente entre sessões`);
+    console.log(`   Serviço: npx @anthropic-basic-memory/serve (porta 3000)`);
+    const bmStatus = pings['basic-memory'];
+    if (bmStatus?.connected) {
+      console.log(`   ✓ Conectado`);
       config.mcp.basicMemory.enabled = true;
     } else {
-      const bmUrl = await ask(`Nova URL [${config.mcp.basicMemory.url || 'http://localhost:3000'}]: `);
-      config.mcp.basicMemory.url = bmUrl || config.mcp.basicMemory.url || 'http://localhost:3000';
-      config.mcp.basicMemory.enabled = true;
+      console.log(`   Status: Offline (inicie o serviço primeiro)`);
+      const answer = await ask(`   Usar Basic Memory? (y/n) [n]: `);
+      config.mcp.basicMemory.enabled = answer.toLowerCase().startsWith('y');
     }
-  } else {
-    console.log(`⚠ Status: Offline ou não configurado.`);
-    const bmEnabled = (await ask(`Habilitar Basic Memory? (y/n) [n]: `)).toLowerCase();
-    config.mcp.basicMemory.enabled = bmEnabled.startsWith('y');
-    if (config.mcp.basicMemory.enabled) {
-      const bmUrl = await ask(`URL do Basic Memory [http://localhost:3000]: `);
-      config.mcp.basicMemory.url = bmUrl || 'http://localhost:3000';
-    }
-  }
 
-  // --- Context7 ---
-  console.log(`\n[2/4] Context7 (Documentação)`);
-  const c7Status = pings['context7'];
-  if (c7Status?.connected) {
-    console.log(`✓ Já está configurado e FUNCIONAL em: ${config.mcp.context7.url || 'http://localhost:3001'}`);
-    const reconf = await ask(`Deseja reconfigurar mesmo assim? (y/N): `);
-    if (!reconf.toLowerCase().startsWith('y')) {
+    // --- Context7 ---
+    console.log(`\n[2/4] Context7`);
+    console.log(`   O que é: Busca contextualizada em documentação`);
+    console.log(`   Serviço: npx @context7/mcp-server (porta 3001)`);
+    const c7Status = pings['context7'];
+    if (c7Status?.connected) {
+      console.log(`   ✓ Conectado`);
       config.mcp.context7.enabled = true;
     } else {
-      const c7Url = await ask(`Nova URL [${config.mcp.context7.url || 'http://localhost:3001'}]: `);
-      config.mcp.context7.url = c7Url || config.mcp.context7.url || 'http://localhost:3001';
-      config.mcp.context7.enabled = true;
+      console.log(`   Status: Offline (inicie o serviço primeiro)`);
+      const answer = await ask(`   Usar Context7? (y/n) [n]: `);
+      config.mcp.context7.enabled = answer.toLowerCase().startsWith('y');
     }
-  } else {
-    console.log(`⚠ Status: Offline ou não configurado.`);
-    const c7Enabled = (await ask(`Habilitar Context7? (y/n) [n]: `)).toLowerCase();
-    config.mcp.context7.enabled = c7Enabled.startsWith('y');
-    if (config.mcp.context7.enabled) {
-      const c7Url = await ask(`URL do Context7 [http://localhost:3001]: `);
-      config.mcp.context7.url = c7Url || 'http://localhost:3001';
-    }
-  }
 
-  // --- Serena ---
-  console.log(`\n[3/4] Serena (Indexação de Código)`);
-  // Serena por enquanto é simulação no ping, então mantemos o fluxo padrão mas com check de path
-  if (config.mcp.serena.enabled && config.mcp.serena.projectPath) {
-    console.log(`✓ Já habilitado para o projeto em: ${config.mcp.serena.projectPath}`);
-    const reconf = await ask(`Deseja alterar o caminho? (y/N): `);
-    if (reconf.toLowerCase().startsWith('y')) {
-      const serenaPath = await ask(`Novo caminho [${config.mcp.serena.projectPath}]: `);
-      config.mcp.serena.projectPath = serenaPath || config.mcp.serena.projectPath;
-    }
-  } else {
-    const serenaEnabled = (await ask(`Habilitar Serena? (y/n) [n]: `)).toLowerCase();
-    config.mcp.serena.enabled = serenaEnabled.startsWith('y');
-    if (config.mcp.serena.enabled) {
-      const serenaPath = await ask(`Caminho do projeto [${projectRoot}]: `);
-      config.mcp.serena.projectPath = serenaPath || projectRoot;
-    }
-  }
-
-  // --- Laravel Boost ---
-  if (config.stack === 'laravel') {
-    console.log(`\n[4/4] Laravel Boost`);
-    if (config.mcp.laravelBoost.enabled) {
-      console.log(`✓ Já habilitado.`);
-      const reconf = await ask(`Deseja desabilitar? (y/N): `);
-      if (reconf.toLowerCase().startsWith('y')) config.mcp.laravelBoost.enabled = false;
+    // --- Serena ---
+    console.log(`\n[3/4] Serena`);
+    console.log(`   O que é: Indexação e busca semântica do código`);
+    console.log(`   Serviço: Rode o app/desktop Serena e configure o projeto`);
+    if (config.mcp.serena.enabled && config.mcp.serena.projectPath) {
+      console.log(`   ✓ Configurado: ${config.mcp.serena.projectPath}`);
+      config.mcp.serena.enabled = true;
     } else {
-      const lbEnabled = (await ask(`Habilitar Laravel Boost? (y/n) [n]: `)).toLowerCase();
-      config.mcp.laravelBoost.enabled = lbEnabled.startsWith('y');
+      const answer = await ask(`   Usar Serena? (y/n) [n]: `);
+      config.mcp.serena.enabled = answer.toLowerCase().startsWith('y');
+      if (config.mcp.serena.enabled) {
+        config.mcp.serena.projectPath = projectRoot;
+      }
     }
+
+    // --- Laravel Boost ---
+    if (config.stack === 'laravel') {
+      console.log(`\n[4/4] Laravel Boost`);
+      console.log(`   O que é: Comandos Laravel otimizados para IA`);
+      console.log(`   Serviço: php artisan boost:mcp no seu projeto Laravel`);
+      const lbStatus = pings['laravel-boost'];
+      if (lbStatus?.connected) {
+        console.log(`   ✓ Conectado`);
+        config.mcp.laravelBoost.enabled = true;
+      } else {
+        console.log(`   Status: Offline (inicie o serviço primeiro)`);
+        const answer = await ask(`   Usar Laravel Boost? (y/n) [n]: `);
+        config.mcp.laravelBoost.enabled = answer.toLowerCase().startsWith('y');
+      }
+    }
+
+    writeConfig(projectRoot, config);
+
+    console.log(`\n✅ Configuração concluída!\n`);
+  } finally {
+    rl.close();
   }
-
-  writeConfig(projectRoot, config);
-  console.log(`\n✅ Configuração de MCPs atualizada com sucesso!\n`);
-
-  rl.close();
 }

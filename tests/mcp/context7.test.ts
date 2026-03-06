@@ -31,7 +31,7 @@ describe('Context7Client.ping()', () => {
 
     expect(result.ok).toBe(false);
     if (!result.ok) {
-      expect(result.error.message).toContain('desabilitado');
+      expect(result.error.message).toContain('Desabilitado');
     }
   });
 });
