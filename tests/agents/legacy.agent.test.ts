@@ -5,6 +5,25 @@ import type { AgentContext } from '../../src/types/agent.js';
 import type { OcpsConfig } from '../../src/types/config.js';
 import type { Roadmap } from '../../src/types/roadmap.js';
 
+const VALID_LEGACY_RESPONSE = JSON.stringify({
+  entries: [
+    {
+      functionName: 'processPayment',
+      inputs: 'amount: number, userId: string',
+      outputs: 'PaymentResult',
+      sideEffects: 'Debita conta, gera log de transação',
+      risk: 'high',
+    },
+    {
+      functionName: 'validateUser',
+      inputs: 'userId: string',
+      outputs: 'boolean',
+      sideEffects: 'Nenhum',
+      risk: 'low',
+    },
+  ],
+});
+
 describe('LegacyAgent', () => {
   let agent: LegacyAgent;
   let mockCtx: AgentContext;
@@ -109,6 +128,59 @@ describe('LegacyAgent', () => {
 
       expect(result.output?.migrationPlan).toBeDefined();
       expect(result.output?.migrationPlan.steps).toBeDefined();
+    });
+  });
+
+  describe('execute — com LLM (MockLlmClient)', () => {
+    it('deve_usar_llm_para_analisar_comportamento', async () => {
+      const mockLlm = new MockLlmClient();
+      mockLlm.setDefaultResponse(VALID_LEGACY_RESPONSE);
+      const llmAgent = new LegacyAgent(mockLlm);
+      const input = {
+        moduleFiles: [
+          { path: 'src/payment.ts', content: 'function processPayment() {}', language: 'typescript' },
+        ],
+      };
+
+      const result = await llmAgent.execute(input, mockCtx);
+
+      expect(result.ok).toBe(true);
+      expect(result.tokensUsed).toBeGreaterThan(0);
+      const names = result.output?.behaviorMap.entries.map((e) => e.functionName);
+      expect(names).toContain('processPayment');
+      expect(names).toContain('validateUser');
+    });
+
+    it('deve_ter_risco_correto_vindo_do_llm', async () => {
+      const mockLlm = new MockLlmClient();
+      mockLlm.setDefaultResponse(VALID_LEGACY_RESPONSE);
+      const llmAgent = new LegacyAgent(mockLlm);
+      const input = {
+        moduleFiles: [
+          { path: 'src/payment.ts', content: 'function processPayment() {}', language: 'typescript' },
+        ],
+      };
+
+      const result = await llmAgent.execute(input, mockCtx);
+
+      const payment = result.output?.behaviorMap.entries.find((e) => e.functionName === 'processPayment');
+      expect(payment?.risk).toBe('high');
+    });
+
+    it('deve_fallback_para_estatico_quando_llm_retorna_json_invalido', async () => {
+      const mockLlm = new MockLlmClient();
+      // sem setDefaultResponse → resposta vazia → fallback estático
+      const llmAgent = new LegacyAgent(mockLlm);
+      const input = {
+        moduleFiles: [
+          { path: 'src/legacy.ts', content: 'function oldFunction() { return 1; }', language: 'typescript' },
+        ],
+      };
+
+      const result = await llmAgent.execute(input, mockCtx);
+
+      expect(result.ok).toBe(true);
+      expect(result.output?.behaviorMap).toBeDefined();
     });
   });
 

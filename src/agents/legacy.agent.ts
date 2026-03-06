@@ -4,6 +4,14 @@ import type { GateStatus } from '../types/gate.js';
 import type { CodeFile } from './code-review.agent.js';
 import type { LlmClient } from '../core/llm-client.js';
 
+interface LlmBehaviorEntry {
+  functionName?: string;
+  inputs?: string;
+  outputs?: string;
+  sideEffects?: string;
+  risk?: string;
+}
+
 export interface BehaviorEntry {
   functionName: string;
   inputs: string;
@@ -86,15 +94,7 @@ export class LegacyAgent implements Agent<LegacyInput, LegacyOutput> {
   async execute(input: LegacyInput, ctx: AgentContext): Promise<AgentResult<LegacyOutput>> {
     const skills = await this.loadSkills(ctx);
 
-    try {
-      await this.llmClient.complete(
-        `Analyze legacy code: ${input.moduleFiles.map((f) => f.path).join(', ')}`,
-      );
-    } catch {
-      // Continue with static analysis
-    }
-
-    const behaviorMap = await this.analyzeBehavior(input);
+    const { map: behaviorMap, tokensUsed } = await this.analyzeBehavior(input);
     const divergences = await this.detectDivergences(input);
     const drf = await this.generateDrf(input, behaviorMap);
     const migrationPlan = await this.generateMigrationPlan(input, behaviorMap);
@@ -107,7 +107,7 @@ export class LegacyAgent implements Agent<LegacyInput, LegacyOutput> {
         drf,
         migrationPlan,
       },
-      tokensUsed: 0,
+      tokensUsed,
       skillsApplied: skills.map((s) => s.name),
       gateStatus: 'pending' as GateStatus,
     };
@@ -147,7 +147,64 @@ export class LegacyAgent implements Agent<LegacyInput, LegacyOutput> {
     console.log(`[LegacyAgent] Gate falhou: ${reason}`);
   }
 
-  private async analyzeBehavior(input: LegacyInput): Promise<BehaviorMap> {
+  private async analyzeBehavior(input: LegacyInput): Promise<{ map: BehaviorMap; tokensUsed: number }> {
+    try {
+      const { entries, tokensUsed } = await this.analyzeBehaviorWithLlm(input);
+      if (entries.length > 0) {
+        return { map: { entries, analyzedAt: new Date().toISOString() }, tokensUsed };
+      }
+    } catch {
+      // fallback to static
+    }
+
+    return { map: this.analyzeBehaviorStatic(input), tokensUsed: 0 };
+  }
+
+  private async analyzeBehaviorWithLlm(input: LegacyInput): Promise<{ entries: BehaviorEntry[]; tokensUsed: number }> {
+    const codeContext = input.moduleFiles.map((f) => `// ${f.path}\n${f.content}`).join('\n\n');
+
+    const prompt = `Você é um especialista em análise de código legado. Analise o código abaixo e extraia o comportamento de cada função.
+
+Código:
+${codeContext}
+
+Retorne APENAS um JSON válido no formato:
+{"entries": [{"functionName": "nome", "inputs": "parâmetros", "outputs": "retorno", "sideEffects": "efeitos colaterais", "risk": "low|medium|high"}]}
+
+Critério de risco:
+- high: funções que modificam banco, executam comandos, deletam dados
+- medium: funções que leem arquivos, fazem I/O externo
+- low: funções de transformação pura`;
+
+    const response = await this.llmClient.complete(prompt);
+    const entries = this.parseBehaviorResponse(response.content);
+    return { entries, tokensUsed: response.tokensUsed };
+  }
+
+  private parseBehaviorResponse(content: string): BehaviorEntry[] {
+    try {
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const data = JSON.parse(jsonMatch[0]) as { entries?: LlmBehaviorEntry[] };
+        if (Array.isArray(data.entries) && data.entries.length > 0) {
+          return data.entries
+            .filter((e): e is LlmBehaviorEntry & { functionName: string } => Boolean(e.functionName))
+            .map((e) => ({
+              functionName: e.functionName,
+              inputs: e.inputs ?? 'unknown',
+              outputs: e.outputs ?? 'unknown',
+              sideEffects: e.sideEffects ?? 'none identified',
+              risk: (['low', 'medium', 'high'].includes(e.risk ?? '') ? e.risk : 'low') as 'low' | 'medium' | 'high',
+            }));
+        }
+      }
+    } catch {
+      // ignore — fallback
+    }
+    return [];
+  }
+
+  private analyzeBehaviorStatic(input: LegacyInput): BehaviorMap {
     const entries: BehaviorEntry[] = [];
 
     for (const file of input.moduleFiles) {
@@ -164,10 +221,7 @@ export class LegacyAgent implements Agent<LegacyInput, LegacyOutput> {
       }
     }
 
-    return {
-      entries,
-      analyzedAt: new Date().toISOString(),
-    };
+    return { entries, analyzedAt: new Date().toISOString() };
   }
 
   private extractFunctions(content: string): { name: string; params: string }[] {
