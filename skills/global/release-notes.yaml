@@ -1,0 +1,30 @@
+name: release-notes
+version: 1.0.0
+agent: deploy
+stack:
+  - typescript
+
+description: >
+  Geração de release notes em markdown para documentar mudanças de cada deploy.
+  Comunicar mudanças de forma clara para stakeholders técnicos e de negócio.
+
+patterns:
+  - |
+    Formato padrão de release notes:
+    # Feature: {título}
+    ## Mudanças
+    - {critério de aceite implementado}
+    ## Como testar
+    - {instruções de validação}
+  - |
+    Incluir impacto: novos endpoints, breaking changes, migrações necessárias
+
+antiPatterns:
+  - |
+    NUNCA omitir breaking changes no release notes
+  - |
+    NUNCA usar jargão técnico em release notes para stakeholders de negócio
+
+lessonsLearned: []
+references: []
+updatedAt: "2026-03-06T00:00:00Z"

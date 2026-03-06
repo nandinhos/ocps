@@ -1,0 +1,33 @@
+name: elicitacao-requisitos
+version: 1.0.0
+agent: brainstorm
+stack:
+  - typescript
+
+description: >
+  Técnicas de elicitação de requisitos para transformar ideias brutas em
+  BacklogItems qualificados com critérios de aceite claros e mensuráveis.
+
+patterns:
+  - |
+    Sempre converter ideia bruta em título conciso (máx 80 chars)
+    Ideia: "quero que o usuário possa entrar no sistema"
+    Título: "Autenticação de usuário via email e senha"
+  - |
+    Gerar mínimo 3 critérios de aceite no formato BDD
+    Dado que / Quando / Então (Given/When/Then)
+  - |
+    Identificar atores envolvidos na funcionalidade
+    Ex: "usuário não autenticado", "administrador", "sistema"
+
+antiPatterns:
+  - |
+    NUNCA aceitar ideia sem pelo menos 1 critério de aceite verificável
+  - |
+    NUNCA usar termos vagos como "rápido", "fácil", "melhor"
+    Substituir por métricas: "tempo de resposta < 200ms"
+
+lessonsLearned: []
+references:
+  - https://www.agilealliance.org/glossary/backlog/
+updatedAt: "2026-03-06T00:00:00Z"

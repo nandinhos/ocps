@@ -1,0 +1,27 @@
+name: ambiguity-detection
+version: 1.0.0
+agent: brainstorm
+stack:
+  - typescript
+
+description: >
+  Identificar e resolver ambiguidades em requisitos antes de avançar para planning.
+  Gerar perguntas de esclarecimento quando a ideia é insuficiente.
+
+patterns:
+  - |
+    Ideia curta (< 10 chars) sempre gera pergunta de esclarecimento
+    Input: "Login" → Pergunta: "Quais métodos de autenticação? OAuth, email/senha, SSO?"
+  - |
+    Detectar termos que implicitam múltiplas interpretações
+    "integrar com o sistema" → "Qual sistema? Qual protocolo? REST, GraphQL, SOAP?"
+
+antiPatterns:
+  - |
+    NUNCA assumir que "sistema" significa um sistema específico
+  - |
+    NUNCA prosseguir sem esclarecer dependências externas (APIs, serviços)
+
+lessonsLearned: []
+references: []
+updatedAt: "2026-03-06T00:00:00Z"

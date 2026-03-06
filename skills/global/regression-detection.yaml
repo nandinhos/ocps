@@ -1,0 +1,29 @@
+name: regression-detection
+version: 1.0.0
+agent: qa
+stack:
+  - typescript
+  - vitest
+
+description: >
+  Detecção de regressões em features existentes após modificações.
+  Garantir que novas implementações não quebram comportamento anterior.
+
+patterns:
+  - |
+    Sempre rodar suite completa de testes antes de aprovar QA
+    npx vitest run → verificar 0 falhas
+  - |
+    Cobertura mínima: 80% linhas, 70% branches (config do projeto)
+  - |
+    Verificar diff de cobertura: nova implementação não pode reduzir cobertura
+
+antiPatterns:
+  - |
+    NUNCA aprovar QA com testes falhando
+  - |
+    NUNCA ignorar warnings de deprecation que podem virar erros
+
+lessonsLearned: []
+references: []
+updatedAt: "2026-03-06T00:00:00Z"

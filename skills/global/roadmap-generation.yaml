@@ -1,0 +1,30 @@
+name: roadmap-generation
+version: 1.0.0
+agent: planning
+stack:
+  - typescript
+
+description: >
+  Geração do arquivo YAML de roadmap em .ocps/roadmap/.
+  O roadmap persiste o estado completo da feature incluindo tasks e sprint.
+
+patterns:
+  - |
+    Estrutura do roadmap YAML:
+    featureId: "feature-{id}"
+    feature: { id, title, description, acceptanceCriteria, sprint, status }
+    tasks: [{ id, title, description, completionCriteria, assignedAgent, status }]
+    sprint: { id, capacityHours }
+    createdAt: ISO timestamp
+  - |
+    Arquivo salvo em: .ocps/roadmap/feature-{id}.yaml
+
+antiPatterns:
+  - |
+    NUNCA sobrescrever roadmap existente sem verificar se está completo
+  - |
+    NUNCA omitir campo status (sempre iniciar como "pending")
+
+lessonsLearned: []
+references: []
+updatedAt: "2026-03-06T00:00:00Z"

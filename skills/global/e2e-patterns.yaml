@@ -1,0 +1,28 @@
+name: e2e-patterns
+version: 1.0.0
+agent: qa
+stack:
+  - typescript
+
+description: >
+  Padrões para testes end-to-end que simulam o comportamento real do usuário.
+  Validar fluxos completos de negócio do ponto de vista externo.
+
+patterns:
+  - |
+    Testes E2E cobrem fluxo completo: request → processamento → resposta
+  - |
+    Usar dados realistas (não "foo", "bar", "test")
+    Ex: email válido, senha com complexidade adequada
+  - |
+    Verificar efeitos colaterais: arquivos criados, banco atualizado, etc.
+
+antiPatterns:
+  - |
+    NUNCA depender de estado global entre testes E2E
+  - |
+    NUNCA usar timeouts fixos (sleep) em testes assíncronos
+
+lessonsLearned: []
+references: []
+updatedAt: "2026-03-06T00:00:00Z"

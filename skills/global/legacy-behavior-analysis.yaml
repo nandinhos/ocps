@@ -1,0 +1,30 @@
+name: legacy-behavior-analysis
+version: 1.0.0
+agent: legacy
+stack:
+  - typescript
+
+description: >
+  Análise de comportamento de código legado antes de migração ou refatoração.
+  Mapear entradas, saídas e efeitos colaterais do código existente.
+
+patterns:
+  - |
+    BehaviorMap: documentar cada função com:
+    - inputs esperados
+    - outputs produzidos
+    - efeitos colaterais (I/O, estado global, chamadas externas)
+  - |
+    Executar código legado com inputs reais e capturar outputs como golden tests
+  - |
+    Identificar dependências implícitas: variáveis globais, estado compartilhado
+
+antiPatterns:
+  - |
+    NUNCA refatorar sem golden tests do comportamento atual
+  - |
+    NUNCA assumir que o código legado está "errado" — pode ser intencional
+
+lessonsLearned: []
+references: []
+updatedAt: "2026-03-06T00:00:00Z"

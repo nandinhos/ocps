@@ -1,0 +1,31 @@
+name: acceptance-criteria-draft
+version: 1.0.0
+agent: brainstorm
+stack:
+  - typescript
+
+description: >
+  Geração de critérios de aceite verificáveis e testáveis.
+  Cada critério deve ser independente e validável por um teste automatizado.
+
+patterns:
+  - |
+    Formato BDD preferido:
+    "Dado [contexto], quando [ação], então [resultado esperado]"
+  - |
+    Critérios de aceite técnicos para APIs:
+    "A resposta deve retornar status 200 com payload { id, token }"
+    "Deve retornar 401 quando token ausente ou inválido"
+  - |
+    Cobertura mínima: happy path + error path + edge case
+
+antiPatterns:
+  - |
+    NUNCA criar critério subjetivo: "deve ser intuitivo", "deve ser bonito"
+  - |
+    NUNCA criar critério que não pode ser automatizado em teste
+
+lessonsLearned: []
+references:
+  - https://www.agilealliance.org/glossary/acceptance-criteria/
+updatedAt: "2026-03-06T00:00:00Z"

@@ -1,0 +1,28 @@
+name: acceptance-validation
+version: 1.0.0
+agent: qa
+stack:
+  - typescript
+
+description: >
+  Validação dos critérios de aceite definidos no BacklogItem.
+  Cada critério deve ser verificável via LLM + evidências do código.
+
+patterns:
+  - |
+    Para cada critério de aceite, verificar:
+    1. O código implementa o comportamento descrito?
+    2. Existe teste cobrindo o critério?
+    3. O teste está passando?
+  - |
+    Evidências válidas: teste automatizado, log de execução, screenshot
+
+antiPatterns:
+  - |
+    NUNCA marcar critério como aprovado sem evidência verificável
+  - |
+    NUNCA ignorar critérios de aceite parcialmente implementados
+
+lessonsLearned: []
+references: []
+updatedAt: "2026-03-06T00:00:00Z"

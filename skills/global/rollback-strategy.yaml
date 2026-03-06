@@ -1,0 +1,29 @@
+name: rollback-strategy
+version: 1.0.0
+agent: deploy
+stack:
+  - typescript
+
+description: >
+  Estratégia de rollback para deploy com falha.
+  Garantir que qualquer deploy possa ser revertido rapidamente.
+
+patterns:
+  - |
+    Blue-green deployment: manter versão anterior ativa até smoke tests passarem
+  - |
+    Feature flags para rollback sem novo deploy:
+    if (featureFlags.newAuth) { ... } else { /* old behavior */ }
+  - |
+    Backup de banco antes de migrations
+    Migrations devem ser reversíveis (UP e DOWN)
+
+antiPatterns:
+  - |
+    NUNCA fazer deploy sem plano de rollback documentado
+  - |
+    NUNCA fazer deploy em produção em sexta-feira após 16h
+
+lessonsLearned: []
+references: []
+updatedAt: "2026-03-06T00:00:00Z"

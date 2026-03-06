@@ -1,0 +1,30 @@
+name: equivalence-testing
+version: 1.0.0
+agent: legacy
+stack:
+  - typescript
+  - vitest
+
+description: >
+  Testes de equivalência para garantir que nova implementação produz
+  os mesmos resultados que o código legado para os mesmos inputs.
+
+patterns:
+  - |
+    Parallel run: executar legado e nova implementação com mesmo input
+    Comparar outputs e logar divergências
+  - |
+    Golden master testing: capturar output do legado como referência
+    Nova implementação deve produzir output idêntico
+  - |
+    Property-based testing com fast-check para inputs aleatórios
+
+antiPatterns:
+  - |
+    NUNCA considerar migração completa sem 100% de equivalência nos testes
+  - |
+    NUNCA ignorar divergências "inofensivas" (timezone, whitespace, etc.)
+
+lessonsLearned: []
+references: []
+updatedAt: "2026-03-06T00:00:00Z"

@@ -1,0 +1,30 @@
+name: integration-testing
+version: 1.0.0
+agent: qa
+stack:
+  - typescript
+  - vitest
+
+description: >
+  Padrões de testes de integração para validar fluxos completos.
+  Testar integração entre módulos sem mocks de dependências internas.
+
+patterns:
+  - |
+    Testes de integração usam instâncias reais dos módulos
+    Mockar apenas serviços externos (APIs, banco de dados)
+  - |
+    Setup e teardown explícitos: beforeAll/afterAll para recursos compartilhados
+  - |
+    Testar fluxo completo end-to-end dentro da aplicação
+
+antiPatterns:
+  - |
+    NUNCA mockar módulos internos em testes de integração
+  - |
+    NUNCA depender de ordem de execução entre testes
+
+lessonsLearned: []
+references:
+  - https://vitest.dev/guide/
+updatedAt: "2026-03-06T00:00:00Z"

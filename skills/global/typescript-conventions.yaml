@@ -1,0 +1,34 @@
+name: typescript-conventions
+version: 1.0.0
+agent: code-review
+stack:
+  - typescript
+
+description: >
+  Convenções TypeScript para o projeto OCPS.
+  Verificar tipagem estrita, naming e estrutura de arquivos.
+
+patterns:
+  - |
+    Strict mode sempre ativo: no "any" - usar "unknown" + type guards
+    const data: unknown = JSON.parse(input);
+    if (typeof data === 'string') { ... }
+  - |
+    Nomenclatura:
+    PascalCase → classes, interfaces, types, enums
+    camelCase → funções, variáveis, métodos
+    kebab-case → arquivos, diretórios
+  - |
+    Imports com extensão .js para módulos ES:
+    import { Agent } from '../types/agent.js';
+
+antiPatterns:
+  - |
+    Type assertions desnecessárias: as SomeType
+  - |
+    Interfaces com campos opcionais onde o campo é sempre necessário
+
+lessonsLearned: []
+references:
+  - https://www.typescriptlang.org/docs/handbook/2/types-from-types.html
+updatedAt: "2026-03-06T00:00:00Z"

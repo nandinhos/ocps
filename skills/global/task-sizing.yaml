@@ -1,0 +1,30 @@
+name: task-sizing
+version: 1.0.0
+agent: planning
+stack:
+  - typescript
+
+description: >
+  Estimativa de tamanho de tasks em horas.
+  Calibrar estimativas baseado em complexidade técnica e histórico.
+
+patterns:
+  - |
+    Sizing por tipo de task:
+    Análise técnica: 1-2h
+    Implementação simples: 1-2h
+    Implementação complexa: 2-4h
+    Code review: 0.5-1h
+    Testes de integração: 1-2h
+  - |
+    Tasks > 4h indicam decomposição insuficiente — quebrar em subtasks
+
+antiPatterns:
+  - |
+    NUNCA estimar "0h" para qualquer task
+  - |
+    NUNCA ignorar overhead de setup/teardown em estimativas
+
+lessonsLearned: []
+references: []
+updatedAt: "2026-03-06T00:00:00Z"

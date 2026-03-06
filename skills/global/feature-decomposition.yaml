@@ -1,0 +1,29 @@
+name: feature-decomposition
+version: 1.0.0
+agent: planning
+stack:
+  - typescript
+
+description: >
+  Decomposição de BacklogItems em Features e Tasks granulares.
+  Cada task deve ser completável em 1-2 horas por um agente especializado.
+
+patterns:
+  - |
+    Task padrão: Analisar → Implementar → Revisar
+    task-001: Análise técnica (assignedAgent: human)
+    task-002: Implementação com TDD (assignedAgent: tdd)
+    task-003: Code review (assignedAgent: code-review)
+  - |
+    Granularidade ideal: 1-2h por task
+    Tasks > 4h devem ser quebradas em subtasks
+
+antiPatterns:
+  - |
+    NUNCA criar task sem completionCriteria definido
+  - |
+    NUNCA criar uma única task "Implementar tudo"
+
+lessonsLearned: []
+references: []
+updatedAt: "2026-03-06T00:00:00Z"

@@ -1,0 +1,30 @@
+name: migration-strategy
+version: 1.0.0
+agent: legacy
+stack:
+  - typescript
+
+description: >
+  Estratégia de migração de código legado para implementação moderna.
+  Migração incremental com garantia de equivalência de comportamento.
+
+patterns:
+  - |
+    Strangler Fig Pattern: envolver código legado gradualmente
+    Nova implementação coexiste com legado até substituição completa
+  - |
+    Branch by abstraction: criar interface, implementar nova versão,
+    trocar implementação atrás da interface
+  - |
+    Feature flags para migração gradual por usuário/percentual
+
+antiPatterns:
+  - |
+    NUNCA big bang migration: reescrever tudo de uma vez
+  - |
+    NUNCA migrar sem equivalence testing automatizado
+
+lessonsLearned: []
+references:
+  - https://martinfowler.com/bliki/StranglerFigApplication.html
+updatedAt: "2026-03-06T00:00:00Z"

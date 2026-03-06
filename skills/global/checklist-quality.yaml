@@ -1,0 +1,30 @@
+name: checklist-quality
+version: 1.0.0
+agent: code-review
+stack:
+  - typescript
+
+description: >
+  Pass 2 do Code Review: análise de qualidade de código.
+  Verificar DRY, naming, complexidade e código morto.
+
+patterns:
+  - |
+    DRY: identificar duplicação de lógica
+    Funções duplicadas ou copy-paste de blocos > 5 linhas
+  - |
+    Naming: nomes expressivos e sem abreviações obscuras
+    variável "d" → renomear para "date" ou "duration"
+  - |
+    Complexidade ciclomática: máximo 10 por função
+    Contar: if, else, for, while, case, catch, &&, ||
+
+antiPatterns:
+  - |
+    Código comentado/morto deixado no arquivo
+  - |
+    Magic numbers sem constante nomeada: if (status === 42)
+
+lessonsLearned: []
+references: []
+updatedAt: "2026-03-06T00:00:00Z"

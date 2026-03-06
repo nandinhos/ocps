@@ -1,0 +1,29 @@
+name: env-management
+version: 1.0.0
+agent: deploy
+stack:
+  - typescript
+
+description: >
+  Gestão de variáveis de ambiente para diferentes ambientes (dev, staging, production).
+  Garantir que secrets nunca sejam expostos em código ou logs.
+
+patterns:
+  - |
+    Hierarquia de envs: .env.local > .env.{environment} > .env
+    Nunca commitar .env com valores reais
+  - |
+    Validar presença de variáveis obrigatórias no startup:
+    if (!process.env.API_KEY) throw new Error('API_KEY obrigatória')
+  - |
+    Staging deve espelhar production em configuração (não em dados)
+
+antiPatterns:
+  - |
+    NUNCA logar valores de variáveis de ambiente sensíveis
+  - |
+    NUNCA usar valores de production em ambiente de staging para testes
+
+lessonsLearned: []
+references: []
+updatedAt: "2026-03-06T00:00:00Z"

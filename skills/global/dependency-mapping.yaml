@@ -1,0 +1,28 @@
+name: dependency-mapping
+version: 1.0.0
+agent: planning
+stack:
+  - typescript
+
+description: >
+  Mapeamento de dependências entre tasks para definir ordem de execução.
+  Identificar bloqueadores antes de iniciar implementação.
+
+patterns:
+  - |
+    Dependências explícitas no roadmap:
+    task-002 depends_on: [task-001]
+    task-003 depends_on: [task-002]
+  - |
+    Dependências externas devem ser sinalizadas como riscos:
+    "task depende de API de terceiro não documentada"
+
+antiPatterns:
+  - |
+    NUNCA começar task sem verificar se dependências estão completas
+  - |
+    NUNCA criar dependência circular entre tasks
+
+lessonsLearned: []
+references: []
+updatedAt: "2026-03-06T00:00:00Z"

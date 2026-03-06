@@ -1,0 +1,28 @@
+name: code-archaeology
+version: 1.0.0
+agent: legacy
+stack:
+  - typescript
+
+description: >
+  Técnicas de arqueologia de código para entender intenção original.
+  Usar git history, comentários e contexto para reconstruir decisões passadas.
+
+patterns:
+  - |
+    git log --follow -p <arquivo> para ver evolução do código
+    git blame para identificar autor e contexto de cada linha
+  - |
+    Comentários TODO/FIXME/HACK indicam problemas conhecidos — documentar
+  - |
+    Buscar issues/PRs fechados para entender decisões de design
+
+antiPatterns:
+  - |
+    NUNCA deletar código legado sem entender seu propósito
+  - |
+    NUNCA assumir que código não usado é dead code (pode ser chamado por reflection)
+
+lessonsLearned: []
+references: []
+updatedAt: "2026-03-06T00:00:00Z"

@@ -1,0 +1,32 @@
+name: checklist-security
+version: 1.0.0
+agent: code-review
+stack:
+  - typescript
+
+description: >
+  Pass 3 do Code Review: análise de segurança (OWASP Top 10).
+  Verificar vulnerabilidades comuns antes de aprovar código.
+
+patterns:
+  - |
+    Verificar inputs do usuário: sempre validar e sanitizar
+    Usar Zod ou similar para validação de schema
+  - |
+    Secrets: NUNCA hardcodar API keys, passwords, tokens
+    Usar process.env e verificar presença antes de usar
+  - |
+    eval() é bloqueador automático: risco de XSS/injection
+
+antiPatterns:
+  - |
+    SQL concatenado com input do usuário (SQL Injection)
+  - |
+    Credentials em código fonte ou comentários
+  - |
+    Uso de eval() ou Function() com input não sanitizado
+
+lessonsLearned: []
+references:
+  - https://owasp.org/www-project-top-ten/
+updatedAt: "2026-03-06T00:00:00Z"

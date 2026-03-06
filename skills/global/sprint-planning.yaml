@@ -1,0 +1,27 @@
+name: sprint-planning
+version: 1.0.0
+agent: planning
+stack:
+  - typescript
+
+description: >
+  Planejamento de sprint com alocação de capacidade e priorização de tasks.
+  Garantir que a sprint não ultrapasse a capacidade do time.
+
+patterns:
+  - |
+    Sprint padrão: 40h de capacidade
+    Distribuição: 70% implementação, 20% revisão, 10% overhead
+  - |
+    Sempre reservar buffer de 20% para imprevistos
+    40h de capacidade → planejar no máximo 32h de tasks
+
+antiPatterns:
+  - |
+    NUNCA planejar sprint com 100% da capacidade alocada
+  - |
+    NUNCA ignorar dependências entre tasks na sequência
+
+lessonsLearned: []
+references: []
+updatedAt: "2026-03-06T00:00:00Z"

@@ -1,0 +1,35 @@
+name: github-actions-typescript
+version: 1.0.0
+agent: deploy
+stack:
+  - typescript
+  - nodejs
+  - github-actions
+
+description: >
+  Padrões de CI/CD com GitHub Actions para projetos TypeScript/Node.js.
+  Workflow com build, test e deploy automático.
+
+patterns:
+  - |
+    Workflow padrão TypeScript:
+    - uses: actions/setup-node@v4 (node-version: '20')
+    - run: npm ci
+    - run: npm test
+    - run: npm run build
+  - |
+    Cache de dependências para acelerar builds:
+    cache: 'npm' no setup-node action
+  - |
+    Secrets via GitHub Secrets: nunca hardcodar no workflow
+
+antiPatterns:
+  - |
+    NUNCA usar npm install em CI (usar npm ci para reproducibilidade)
+  - |
+    NUNCA commitar .env com secrets no repositório
+
+lessonsLearned: []
+references:
+  - https://docs.github.com/en/actions
+updatedAt: "2026-03-06T00:00:00Z"

@@ -1,0 +1,31 @@
+name: checklist-structural
+version: 1.0.0
+agent: code-review
+stack:
+  - typescript
+
+description: >
+  Pass 1 do Code Review: análise estrutural baseada em princípios SOLID.
+  Verificar separação de responsabilidades e design patterns.
+
+patterns:
+  - |
+    SRP: cada classe/função tem uma única responsabilidade
+    Verificar: classe tem mais de 200 linhas? Candidato para split.
+  - |
+    DIP: depender de abstrações, não de implementações concretas
+    Verificar: imports de classes concretas em módulos de alto nível
+  - |
+    ISP: interfaces pequenas e específicas
+    Verificar: interfaces com > 5 métodos
+
+antiPatterns:
+  - |
+    Classes God Object: uma classe que faz tudo
+  - |
+    Acoplamento direto a implementações externas sem interface
+
+lessonsLearned: []
+references:
+  - https://www.digitalocean.com/community/conceptual-articles/s-o-l-i-d-the-first-five-principles-of-object-oriented-design
+updatedAt: "2026-03-06T00:00:00Z"

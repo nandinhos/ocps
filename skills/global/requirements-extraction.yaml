@@ -1,0 +1,29 @@
+name: requirements-extraction
+version: 1.0.0
+agent: legacy
+stack:
+  - typescript
+
+description: >
+  Extração de requisitos implícitos de código legado para documentação.
+  Transformar comportamento observado em requisitos formais verificáveis.
+
+patterns:
+  - |
+    Para cada função legada, extrair:
+    1. Pré-condições (validações de input)
+    2. Pós-condições (garantias sobre output)
+    3. Invariantes (estado que nunca muda)
+  - |
+    Criar testes de caracterização antes de qualquer mudança
+    Esses testes documentam o comportamento ATUAL (não o desejado)
+
+antiPatterns:
+  - |
+    NUNCA documentar comportamento sem verificar com testes
+  - |
+    NUNCA misturar requisitos atuais com requisitos desejados
+
+lessonsLearned: []
+references: []
+updatedAt: "2026-03-06T00:00:00Z"
