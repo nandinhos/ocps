@@ -9,15 +9,12 @@ export interface McpPingResult {
 }
 
 /**
- * Orquestra todas as conexões MCP do OCPS.
- *
- * Degradação graciosa: connect() sempre retorna ok:true.
- * Se um MCP estiver offline, o sistema continua funcionando —
- * apenas as operações que dependem daquele MCP retornam ok:false.
+ * Orquestra todas as conexões MCP do OCPS com Circuit Breaker.
  */
 export class McpBridge {
   private readonly _basicMemory: BasicMemoryClient;
   private readonly _context7: Context7Client;
+  private _unstableMcps: Set<string> = new Set();
 
   constructor(private readonly config: McpConfig) {
     this._basicMemory = new BasicMemoryClient(
@@ -30,11 +27,6 @@ export class McpBridge {
     );
   }
 
-  /**
-   * Tenta conectar a todos os MCPs habilitados.
-   * Nunca lança exceção — retorna ok:true mesmo com MCPs offline.
-   * O campo McpConnections.connected reflete o estado real de cada MCP.
-   */
   async connect(): Promise<Result<McpConnections>> {
     const pings = await this.ping();
 
@@ -51,54 +43,42 @@ export class McpBridge {
       },
     };
 
-    if (!connections.basicMemory.connected && this.config.basicMemory.enabled) {
-      const err = pings['basic-memory']?.error;
-      console.warn(`[McpBridge] Basic Memory offline${err ? `: ${err}` : ''} — degradação graciosa ativa`);
+    // Circuit Breaker: Marcar como instável se falhar no connect inicial
+    if (this.config.basicMemory.enabled && !connections.basicMemory.connected) {
+      this._unstableMcps.add('basic-memory');
     }
-
-    if (!connections.context7.connected && this.config.context7.enabled) {
-      const err = pings['context7']?.error;
-      console.warn(`[McpBridge] Context7 offline${err ? `: ${err}` : ''} — degradação graciosa ativa`);
+    if (this.config.context7.enabled && !connections.context7.connected) {
+      this._unstableMcps.add('context7');
     }
 
     return { ok: true, value: connections };
   }
 
-  /**
-   * Verifica conectividade de todos os MCPs configurados.
-   */
   async ping(): Promise<Record<string, McpPingResult>> {
-    const [bmResult, c7Result] = await Promise.all([
-      this._basicMemory.ping(),
-      this._context7.ping(),
-    ]);
+    const results: Record<string, McpPingResult> = {};
 
-    return {
-      'basic-memory': {
-        connected: bmResult.ok,
-        error: bmResult.ok ? undefined : bmResult.error.message,
-      },
-      context7: {
-        connected: c7Result.ok,
-        error: c7Result.ok ? undefined : c7Result.error.message,
-      },
-    };
+    // Se estiver marcado como instável, nem tentamos o ping para economizar tempo
+    if (this._unstableMcps.has('basic-memory')) {
+      results['basic-memory'] = { connected: false, error: 'Circuit Breaker: Instável' };
+    } else {
+      const bm = await this._basicMemory.ping();
+      results['basic-memory'] = { connected: bm.ok, error: bm.ok ? undefined : bm.error.message };
+      if (!bm.ok) this._unstableMcps.add('basic-memory');
+    }
+
+    if (this._unstableMcps.has('context7')) {
+      results['context7'] = { connected: false, error: 'Circuit Breaker: Instável' };
+    } else {
+      const c7 = await this._context7.ping();
+      results['context7'] = { connected: c7.ok, error: c7.ok ? undefined : c7.error.message };
+      if (!c7.ok) this._unstableMcps.add('context7');
+    }
+
+    return results;
   }
 
-  /**
-   * Encerra conexões ativas.
-   * Fase 0: no-op (conexões são stateless via HTTP ping).
-   * Fase 1: fecha transports do MCP SDK.
-   */
-  async disconnect(): Promise<void> {
-    // Phase 1: fechar transports MCP
-  }
+  async disconnect(): Promise<void> {}
 
-  get basicMemory(): BasicMemoryClient {
-    return this._basicMemory;
-  }
-
-  get context7(): Context7Client {
-    return this._context7;
-  }
+  get basicMemory(): BasicMemoryClient { return this._basicMemory; }
+  get context7(): Context7Client { return this._context7; }
 }
