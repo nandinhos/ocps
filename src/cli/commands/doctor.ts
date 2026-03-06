@@ -147,7 +147,9 @@ export async function doctor(): Promise<void> {
   console.log(`${configColor}${configIcon}\x1b[0m Config: ${result.config.message || 'OK'}`);
 
   if (config) {
-    console.log(`\x1b[32m✓\x1b[0m Natureza: ${config.nature}`);
+    if (config.nature) {
+      console.log(`\x1b[32m✓\x1b[0m Natureza: ${config.nature}`);
+    }
     if (config.phpVersion) {
       console.log(`\x1b[32m✓\x1b[0m PHP Version: ${config.phpVersion}`);
     }

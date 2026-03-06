@@ -75,7 +75,7 @@ export function writeConfig(projectRoot: string, config: OcpsConfig): void {
     `version: "${config.version}"`,
     `projectName: ${config.projectName}`,
     `stack: ${config.stack}`,
-    `nature: ${config.nature}`,
+    config.nature ? `nature: ${config.nature}` : null,
     config.phpVersion ? `phpVersion: ${config.phpVersion}` : null,
     `primaryModel: ${config.primaryModel}`,
     config.fallbackModel ? `fallbackModel: ${config.fallbackModel}` : null,
