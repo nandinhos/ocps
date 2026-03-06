@@ -89,81 +89,100 @@ export function createProgram(): Command {
     .description('OCPS — Orquestrador Cognitivo de Projetos de Software')
     .version(getVersion());
 
+  async function runInstall(
+    projectRoot: string,
+    options: { yes?: boolean; force?: boolean },
+  ): Promise<void> {
+    const existingConfig = configExists(projectRoot);
+    if (existingConfig && !options.yes) {
+      console.log('Configuração já existe. Use --yes para sobrescrever.');
+      process.exit(0);
+    }
+
+    if (existingConfig && options.yes) {
+      console.log('Sobrescrevendo configuração existente...');
+    }
+
+    const detector = new StackDetector();
+    const result = detector.detect(projectRoot);
+    console.log(`Stack detectada: ${result.stack}`);
+    console.log(`Natureza: ${result.nature}`);
+    if (result.phpVersion) console.log(`PHP Version: ${result.phpVersion}`);
+
+    const envChecks = await checkEnvironment(result.stack);
+    printEnvironmentCheck(envChecks);
+
+    if (
+      result.nature === 'brownfield' &&
+      result.phpVersion &&
+      parseFloat(result.phpVersion) >= 8.4
+    ) {
+      console.log('\n💡 Sugestão: Este é um projeto Brownfield moderno (PHP >= 8.4).');
+      console.log(
+        '   Considere habilitar o MCP Serena para indexação de código e economia de tokens.',
+      );
+    }
+
+    if (result.nature === 'greenfield') {
+      if (result.hasPrd) {
+        console.log('\n✓ PRD.md encontrado. O OCPS usará este arquivo para guiar o fluxo.');
+      } else {
+        console.log('\n⚠ Aviso: Projeto Greenfield sem PRD.md.');
+        console.log('   Recomenda-se criar um arquivo PRD.md com os requisitos do sistema.');
+      }
+    }
+
+    const projectName = path.basename(projectRoot);
+    const config = {
+      version: '1.0.0',
+      projectName,
+      stack: result.stack,
+      nature: result.nature,
+      phpVersion: result.phpVersion,
+      primaryModel: 'claude-sonnet-4-5',
+      mcp: {
+        basicMemory: { enabled: true },
+        context7: { enabled: true },
+        serena: { enabled: result.nature === 'brownfield' },
+        laravelBoost: { enabled: result.stack === 'laravel' },
+      },
+      coverageThreshold: { lines: 80, branches: 70 },
+      createdAt: new Date().toISOString(),
+    };
+
+    writeConfig(projectRoot, config);
+    addToGitignore(projectRoot);
+
+    const mcpResult = generateMcpJson(projectRoot, result.stack, result.phpVersion, options.force);
+    if (mcpResult.created) {
+      console.log('✓ .mcp.json criado');
+    }
+
+    console.log('\n✓ Configuração criada em .ocps/config.yaml');
+    console.log('\nPróximos passos:');
+    console.log('  1. ocps mcp setup — Configurar MCPs');
+    console.log('  2. ocps doctor    — Verificar dependências');
+    console.log('  3. ocps start     — Iniciar sessão');
+  }
+
   program
-    .command('init')
-    .description('Inicializa OCPS no projeto atual')
+    .command('install')
+    .description('Instala e configura o OCPS no projeto atual')
     .option('-y, --yes', 'Responde sim automaticamente para todas as perguntas')
+    .option('-f, --force', 'Força sobrescrita de arquivos existentes')
     .action(async (options) => {
       const projectRoot = process.cwd();
+      await runInstall(projectRoot, options);
+    });
 
-      const existingConfig = configExists(projectRoot);
-      if (existingConfig && !options.yes) {
-        console.log('Configuração já existe. Use --yes para sobrescrever.');
-        process.exit(0);
-      }
-
-      if (existingConfig && options.yes) {
-        console.log('Sobrescrevendo configuração existente...');
-      }
-
-      const detector = new StackDetector();
-      const result = detector.detect(projectRoot);
-      console.log(`Stack detectada: ${result.stack}`);
-      console.log(`Natureza: ${result.nature}`);
-      if (result.phpVersion) console.log(`PHP Version: ${result.phpVersion}`);
-
-      const envChecks = await checkEnvironment(result.stack);
-      printEnvironmentCheck(envChecks);
-
-      if (
-        result.nature === 'brownfield' &&
-        result.phpVersion &&
-        parseFloat(result.phpVersion) >= 8.4
-      ) {
-        console.log('\n💡 Sugestão: Este é um projeto Brownfield moderno (PHP >= 8.4).');
-        console.log(
-          '   Considere habilitar o MCP Serena para indexação de código e economia de tokens.',
-        );
-      }
-
-      if (result.nature === 'greenfield') {
-        if (result.hasPrd) {
-          console.log('\n✓ PRD.md encontrado. O OCPS usará este arquivo para guiar o fluxo.');
-        } else {
-          console.log('\n⚠ Aviso: Projeto Greenfield sem PRD.md.');
-          console.log('   Recomenda-se criar um arquivo PRD.md com os requisitos do sistema.');
-        }
-      }
-
-      const projectName = path.basename(projectRoot);
-      const config = {
-        version: '1.0.0',
-        projectName,
-        stack: result.stack,
-        nature: result.nature,
-        phpVersion: result.phpVersion,
-        primaryModel: 'claude-sonnet-4-5',
-        mcp: {
-          basicMemory: { enabled: true },
-          context7: { enabled: true },
-          serena: { enabled: result.nature === 'brownfield' },
-          laravelBoost: { enabled: result.stack === 'laravel' },
-        },
-        coverageThreshold: { lines: 80, branches: 70 },
-        createdAt: new Date().toISOString(),
-      };
-
-      writeConfig(projectRoot, config);
-      addToGitignore(projectRoot);
-
-      generateMcpJson(projectRoot, result.stack, result.phpVersion);
-      console.log('✓ .mcp.json criado');
-
-      console.log('\n✓ Configuração criada em .ocps/config.yaml');
-      console.log('\nPróximos passos:');
-      console.log('  1. ocps mcp setup — Configurar MCPs');
-      console.log('  2. ocps doctor    — Verificar dependências');
-      console.log('  3. ocps start     — Iniciar sessão');
+  program
+    .command('init')
+    .description('Instala e configura o OCPS no projeto atual (alias para install)')
+    .option('-y, --yes', 'Responde sim automaticamente para todas as perguntas')
+    .option('-f, --force', 'Força sobrescrita de arquivos existentes')
+    .action(async (options) => {
+      const projectRoot = process.cwd();
+      await runInstall(projectRoot, options);
     });
 
   program

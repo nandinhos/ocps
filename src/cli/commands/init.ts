@@ -132,18 +132,25 @@ export function configExists(projectRoot: string): boolean {
   return fs.existsSync(configPath);
 }
 
-export function generateMcpJson(projectRoot: string, stack: StackType, phpVersion?: string): void {
-  const mcpPath = path.join(projectRoot, '.mcp.json');
+interface McpServerConfig {
+  command: string;
+  args: string[];
+}
 
-  if (fs.existsSync(mcpPath)) {
-    return;
-  }
+export function generateMcpJson(
+  projectRoot: string,
+  stack: StackType,
+  phpVersion?: string,
+  force = false,
+): { created: boolean; path: string } {
+  const mcpPath = path.join(projectRoot, '.mcp.json');
+  const existingMcp = fs.existsSync(mcpPath) ? JSON.parse(fs.readFileSync(mcpPath, 'utf-8')) : null;
 
   const ocpsPath =
     process.argv[1]?.replace(/dist\/index\.js$/, 'dist/mcp/ocps-mcp-server.js') ||
     '/home/nandodev/projects/ocps/dist/mcp/ocps-mcp-server.js';
 
-  const servers: Record<string, object> = {
+  const servers: Record<string, McpServerConfig> = {
     ocps: {
       command: 'node',
       args: [ocpsPath],
@@ -184,9 +191,19 @@ export function generateMcpJson(projectRoot: string, stack: StackType, phpVersio
     };
   }
 
-  const mcpContent = {
-    mcpServers: servers,
-  };
+  const newMcpContent = { mcpServers: servers };
 
-  fs.writeFileSync(mcpPath, JSON.stringify(mcpContent, null, 2), 'utf-8');
+  if (existingMcp && !force) {
+    const hasDifferences = JSON.stringify(existingMcp) !== JSON.stringify(newMcpContent);
+    if (hasDifferences) {
+      console.log('\n⚠️  Diferença encontrada no .mcp.json:');
+      console.log('   Existing:', JSON.stringify(existingMcp.mcpServers, null, 2));
+      console.log('   Generated:', JSON.stringify(newMcpContent.mcpServers, null, 2));
+      console.log('   Mantendo configuração existente. Use --force para sobrescrever.');
+    }
+    return { created: false, path: mcpPath };
+  }
+
+  fs.writeFileSync(mcpPath, JSON.stringify(newMcpContent, null, 2), 'utf-8');
+  return { created: true, path: mcpPath };
 }
