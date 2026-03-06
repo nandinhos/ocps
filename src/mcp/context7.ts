@@ -24,7 +24,7 @@ export class Context7Client {
     const id = setTimeout(() => controller.abort(), PING_TIMEOUT_MS);
 
     try {
-      await fetch(this.url, { method: 'HEAD', signal: controller.signal, cache: 'no-store' });
+      await fetch(this.url, { method: 'HEAD', signal: controller.signal });
       this.connected = true;
       return { ok: true, value: undefined };
     } catch (e) {

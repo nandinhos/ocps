@@ -19,9 +19,6 @@ export class StackDetector {
 
     const hasPackageJson = fs.existsSync(path.join(projectRoot, 'package.json'));
     const hasComposerJson = fs.existsSync(path.join(projectRoot, 'composer.json'));
-    const hasRequirementsTxt = fs.existsSync(path.join(projectRoot, 'requirements.txt'));
-    const hasGoMod = fs.existsSync(path.join(projectRoot, 'go.mod'));
-    const hasCargoToml = fs.existsSync(path.join(projectRoot, 'Cargo.toml'));
     const hasPrd = fs.existsSync(path.join(projectRoot, 'PRD.md'));
 
     let stack: StackType = 'unknown';
@@ -34,14 +31,13 @@ export class StackDetector {
         const composer = JSON.parse(content);
         files.push('composer.json');
         
-        phpVersion = composer.require?.php?.replace(/[^0-9.]/g, '') || '8.2'; // default se não achar
+        phpVersion = composer.require?.php?.replace(/[^0-9.]/g, '') || '8.2';
 
         if (composer.require?.['laravel/framework']) {
           indicators.push('Laravel detected via composer.json');
           stack = 'laravel';
         } else {
           indicators.push('PHP project detected');
-          stack = 'unknown'; // Podia ser 'php' mas o tipo atual não tem
         }
       } catch { /* ignore */ }
     }
@@ -61,20 +57,17 @@ export class StackDetector {
       } catch { /* ignore */ }
     }
 
-    // Heurística de Natureza (Greenfield vs Brownfield)
-    // Se tem src/ ou app/ com arquivos, é Brownfield.
     const hasSourceDir = fs.existsSync(path.join(projectRoot, 'src')) || fs.existsSync(path.join(projectRoot, 'app'));
     let nature: ProjectNature = 'greenfield';
 
     if (hasSourceDir) {
       const srcDir = fs.existsSync(path.join(projectRoot, 'src')) ? 'src' : 'app';
       const filesInSrc = fs.readdirSync(path.join(projectRoot, srcDir)).filter(f => !f.startsWith('.'));
-      if (filesInSrc.length > 2) { // Mais que um boilerplate básico
+      if (filesInSrc.length > 2) {
         nature = 'brownfield';
       }
     }
 
-    // Refinamento PHP Legacy
     if (phpVersion) {
       const versionNum = parseFloat(phpVersion);
       if (versionNum < 8.3) {

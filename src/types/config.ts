@@ -32,8 +32,6 @@ export interface OcpsConfig {
   mcp: McpConfig;
   coverageThreshold: { lines: number; branches: number };
   createdAt: string;
-};
-  createdAt: string;
 }
 
 // Representa uma conexão ativa com um servidor MCP

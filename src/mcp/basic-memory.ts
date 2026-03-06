@@ -25,7 +25,7 @@ export class BasicMemoryClient {
 
     try {
       // HEAD é o método mais leve para verificar se o servidor está vivo
-      await fetch(this.url, { method: 'HEAD', signal: controller.signal, cache: 'no-store' });
+      await fetch(this.url, { method: 'HEAD', signal: controller.signal });
       this.connected = true;
       return { ok: true, value: undefined };
     } catch (e) {
