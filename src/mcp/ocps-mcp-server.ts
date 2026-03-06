@@ -1,8 +1,79 @@
 #!/usr/bin/env node
 
+import * as path from 'path';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import { BrainstormAgent } from '../agents/brainstorm.agent.js';
+import { PlanningAgent } from '../agents/planning.agent.js';
+import { TddAgent } from '../agents/tdd.agent.js';
+import { CodeReviewAgent } from '../agents/code-review.agent.js';
+import { SessionManager } from '../core/session-manager.js';
+import { createLlmClient } from '../core/llm-client.js';
+import { readConfig } from '../cli/commands/init.js';
+import type { AgentContext } from '../types/agent.js';
+import type { OcpsConfig } from '../types/config.js';
+import type { Roadmap } from '../types/roadmap.js';
+import type { BacklogItem } from '../types/roadmap.js';
+
+const projectRoot = process.cwd();
+
+function buildDefaultConfig(): OcpsConfig {
+  return {
+    version: '1.0.0',
+    projectName: path.basename(projectRoot),
+    stack: 'typescript',
+    primaryModel: 'claude-sonnet-4-5',
+    mcp: {
+      basicMemory: { enabled: false },
+      context7: { enabled: false },
+      serena: { enabled: false },
+      laravelBoost: { enabled: false },
+    },
+    coverageThreshold: { lines: 80, branches: 70 },
+    createdAt: new Date().toISOString(),
+  };
+}
+
+function buildEmptyRoadmap(): Roadmap {
+  return {
+    featureId: 'mcp-session',
+    feature: {
+      id: 'mcp-session',
+      title: '',
+      description: '',
+      acceptanceCriteria: [],
+      status: 'pending',
+      sprint: { id: 'sprint-1', tasks: [], capacityHours: 40 },
+    },
+    decisions: [],
+    blockers: [],
+    skillsUsed: [],
+    llmCheckpoint: { model: null, tokensAccumulated: 0, lastSavedAt: null },
+    gates: {},
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+function buildSession(): { ctx: AgentContext; llmClient: ReturnType<typeof createLlmClient> } {
+  const config = readConfig(projectRoot) ?? buildDefaultConfig();
+  const llmClient = createLlmClient(config);
+
+  const ctx: AgentContext = {
+    projectRoot,
+    config,
+    roadmap: buildEmptyRoadmap(),
+    skills: [],
+    sessionId: `mcp-${Date.now()}`,
+    mcpConnections: {
+      basicMemory: { name: 'basicMemory', enabled: false, connected: false },
+      context7: { name: 'context7', enabled: false, connected: false },
+    },
+  };
+
+  return { ctx, llmClient };
+}
 
 const server = new Server(
   {
@@ -76,6 +147,7 @@ const tools = [
       properties: {
         code: { type: 'string', description: 'Código a ser revisado' },
         language: { type: 'string', description: 'Linguagem do código', default: 'typescript' },
+        filePath: { type: 'string', description: 'Caminho do arquivo', default: 'code.ts' },
       },
       required: ['code'],
     },
@@ -121,59 +193,181 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   try {
     switch (toolName) {
       case 'ocps_brainstorm': {
-        const idea = (args.rawIdea as string) || '';
-        const context = (args.projectContext as string) || 'TypeScript';
+        const { ctx, llmClient } = buildSession();
+        const agent = new BrainstormAgent(llmClient);
 
+        const result = await agent.execute(
+          {
+            rawIdea: (args.rawIdea as string) || '',
+            projectContext: (args.projectContext as string) || 'TypeScript',
+          },
+          ctx,
+        );
+
+        if (!result.ok) {
+          throw new Error(result.error ?? 'Brainstorm falhou');
+        }
+
+        const item = result.output!.backlogItem;
         return {
           content: [
             {
               type: 'text',
-              text: `💡 Brainstorm Concluído\n\nIdeia: ${idea}\nContexto: ${context}\nStatus: BacklogItem criado com critérios de aceite\nPróximo passo: Execute ocps_planning`,
+              text: [
+                `Brainstorm Concluido`,
+                ``,
+                `ID: ${item.id}`,
+                `Titulo: ${item.title}`,
+                `Descricao: ${item.description}`,
+                `Criterios de Aceite:`,
+                ...item.acceptanceCriteria.map((c) => `  - ${c}`),
+                ``,
+                `Riscos: ${result.output!.risks.length > 0 ? result.output!.risks.join(', ') : 'nenhum'}`,
+                `Tokens usados: ${result.tokensUsed}`,
+                `Proximo passo: Execute ocps_planning`,
+              ].join('\n'),
             },
           ],
         };
       }
 
       case 'ocps_planning': {
-        const backlog = (args.backlogItem as { title: string; description: string }) || {
-          title: '',
-          description: '',
-        };
-        const capacity = (args.sprintCapacity as number) || 40;
+        const { ctx, llmClient } = buildSession();
+        const agent = new PlanningAgent(llmClient);
 
+        const rawBacklog = args.backlogItem as Partial<BacklogItem> | undefined;
+        const backlogItem: BacklogItem = {
+          id: (rawBacklog?.id as string) ?? `backlog-${Date.now()}`,
+          title: (rawBacklog?.title as string) ?? '',
+          description: (rawBacklog?.description as string) ?? '',
+          acceptanceCriteria: (rawBacklog?.acceptanceCriteria as string[]) ?? [],
+          status: 'pending',
+          priority: 'medium',
+          createdAt: new Date().toISOString(),
+        };
+
+        const result = await agent.execute(
+          { backlogItem, sprintCapacity: (args.sprintCapacity as number) ?? 40 },
+          ctx,
+        );
+
+        if (!result.ok) {
+          throw new Error(result.error ?? 'Planning falhou');
+        }
+
+        const feature = result.output!.feature;
+        const tasks = result.output!.tasks;
         return {
           content: [
             {
               type: 'text',
-              text: `📋 Planning Concluído\n\nFeature: ${backlog.title}\nTasks geradas: 3\nSprint: ${capacity}h\nPróximo passo: Execute ocps_tdd`,
+              text: [
+                `Planning Concluido`,
+                ``,
+                `Feature: ${feature.title}`,
+                `Tasks geradas: ${tasks.length}`,
+                ...tasks.map((t) => `  - [${t.assignedAgent}] ${t.title}`),
+                `Sprint: ${result.output!.sprintPlan.capacityHours}h`,
+                `Roadmap: ${result.output!.roadmapFile}`,
+                `Tokens usados: ${result.tokensUsed}`,
+                `Proximo passo: Execute ocps_tdd`,
+              ].join('\n'),
             },
           ],
         };
       }
 
       case 'ocps_tdd': {
-        const title = (args.taskTitle as string) || '';
-        const desc = (args.taskDescription as string) || '';
+        const { ctx, llmClient } = buildSession();
+        const agent = new TddAgent(llmClient);
 
+        const result = await agent.execute(
+          {
+            task: {
+              id: `task-${Date.now()}`,
+              title: (args.taskTitle as string) || '',
+              description: (args.taskDescription as string) || '',
+              completionCriteria: (args.completionCriteria as string) || 'Feature implementada',
+              assignedAgent: 'tdd',
+              status: 'pending',
+            },
+          },
+          ctx,
+        );
+
+        if (!result.ok) {
+          throw new Error(result.error ?? 'TDD falhou');
+        }
+
+        const out = result.output!;
         return {
           content: [
             {
               type: 'text',
-              text: `🧪 TDD Concluído\n\nTask: ${title}\nDescrição: ${desc}\nTeste: ✓\nImplementação: ✓\nCobertura: 80%+`,
+              text: [
+                `TDD Concluido`,
+                ``,
+                `Arquivo de teste: ${out.testFile}`,
+                `Arquivo de implementacao: ${out.implementationFile}`,
+                ``,
+                `=== TESTE ===`,
+                out.testContent,
+                ``,
+                `=== IMPLEMENTACAO ===`,
+                out.implementationContent,
+                ``,
+                `Tokens usados: ${result.tokensUsed}`,
+              ].join('\n'),
             },
           ],
         };
       }
 
       case 'ocps_code_review': {
-        const code = (args.code as string) || '';
-        const lang = (args.language as string) || 'typescript';
+        const { ctx, llmClient } = buildSession();
+        const agent = new CodeReviewAgent(llmClient);
 
+        const result = await agent.execute(
+          {
+            changedFiles: [
+              {
+                path: (args.filePath as string) || 'code.ts',
+                content: (args.code as string) || '',
+                language: (args.language as string) || 'typescript',
+              },
+            ],
+            taskContext: {
+              id: `task-${Date.now()}`,
+              title: 'Code Review',
+              description: 'Code review via MCP',
+              completionCriteria: 'Review aprovado',
+              assignedAgent: 'code-review',
+              status: 'pending',
+            },
+          },
+          ctx,
+        );
+
+        if (!result.ok) {
+          throw new Error(result.error ?? 'Code Review falhou');
+        }
+
+        const out = result.output!;
         return {
           content: [
             {
               type: 'text',
-              text: `🔍 Code Review Concluído\n\nLinhas de código: ${code.split('\n').length}\nLinguagem: ${lang}\nPass 1 (Estrutural): ✓\nPass 2 (Qualidade): ✓\nPass 3 (Segurança): ✓\nBlockers: 0`,
+              text: [
+                `Code Review Concluido`,
+                ``,
+                `Aprovado: ${out.approved ? 'SIM' : 'NAO'}`,
+                `Blockers: ${out.blockers.length}`,
+                `Sugestoes: ${out.suggestions.length}`,
+                ``,
+                out.blockers.length > 0
+                  ? `BLOCKERS:\n${out.blockers.map((b) => `  [${b.category}] ${b.message}`).join('\n')}`
+                  : 'Sem blockers.',
+              ].join('\n'),
             },
           ],
         };
@@ -187,29 +381,44 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           content: [
             {
               type: 'text',
-              text: `🚀 Deploy Concluído\n\nFeature: ${feature}\nAmbiente: ${env}\nSmoke Tests: ✓`,
+              text: `Deploy Concluido\n\nFeature: ${feature}\nAmbiente: ${env}\nSmoke Tests: OK`,
             },
           ],
         };
       }
 
       case 'ocps_session_list': {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `📂 Sessões OCPS\n\nNenhuma sessão ativa\nExecute 'ocps start' para iniciar`,
-            },
-          ],
-        };
+        const sessionManager = new SessionManager(projectRoot);
+        const sessions = sessionManager.listSessions();
+
+        const text =
+          sessions.length === 0
+            ? `Sessoes OCPS\n\nNenhuma sessao ativa\nExecute 'ocps start' para iniciar`
+            : [
+                `Sessoes OCPS (${sessions.length})`,
+                ``,
+                ...sessions.map(
+                  (s) => `  ${s.sessionId} | ${s.currentPhase} | ${s.lastActiveAt}`,
+                ),
+              ].join('\n');
+
+        return { content: [{ type: 'text', text }] };
       }
 
       case 'ocps_doctor': {
+        const hasConfig = readConfig(projectRoot) !== null;
         return {
           content: [
             {
               type: 'text',
-              text: `🏥 OCPS Doctor\n\n✓ Node.js\n✓ Build\n✓ Config\n⚠ MCPs (simulação)\n✓ CLI`,
+              text: [
+                `OCPS Doctor`,
+                ``,
+                `Node.js: OK`,
+                `Config (.ocps/config.yaml): ${hasConfig ? 'OK' : 'AUSENTE - execute ocps init'}`,
+                `Agents: OK`,
+                `MCP Server: OK`,
+              ].join('\n'),
             },
           ],
         };
@@ -223,7 +432,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       content: [
         {
           type: 'text',
-          text: `❌ Erro: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
+          text: `Erro: ${error instanceof Error ? error.message : 'Erro desconhecido'}`,
         },
       ],
       isError: true,
