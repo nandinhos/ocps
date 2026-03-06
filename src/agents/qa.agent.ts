@@ -2,7 +2,8 @@ import type { Agent, AgentContext, AgentResult, ValidationResult } from '../type
 import type { Skill } from '../types/skill.js';
 import type { GateStatus } from '../types/gate.js';
 import type { Feature } from '../types/roadmap.js';
-import type { CodeReviewOutput } from './code-review.agent.js';
+import type { CodeFile } from './code-review.agent.js';
+import type { LlmClient } from '../core/llm-client.js';
 
 export interface TestResult {
   name: string;
@@ -25,7 +26,7 @@ export interface AcceptanceCriteriaResult {
 
 export interface QaInput {
   feature: Feature;
-  implementedFiles: CodeReviewOutput;
+  implementedFiles: CodeFile[];
 }
 
 export interface QaOutput {
@@ -36,10 +37,22 @@ export interface QaOutput {
   evidence: Evidence[];
 }
 
+interface LlmCriteriaResult {
+  criterion?: string;
+  passed?: boolean;
+  evidence?: string;
+}
+
 export class QaAgent implements Agent<QaInput, QaOutput> {
   readonly name = 'QaAgent';
   readonly version = '1.0.0';
   readonly scope = ['tests/**/*.ts', 'src/**/*.ts'];
+
+  private llmClient?: LlmClient;
+
+  constructor(llmClient?: LlmClient) {
+    this.llmClient = llmClient;
+  }
 
   async execute(input: QaInput, ctx: AgentContext): Promise<AgentResult<QaOutput>> {
     const skills = await this.loadSkills(ctx);
@@ -60,6 +73,9 @@ export class QaAgent implements Agent<QaInput, QaOutput> {
       data: JSON.stringify({ integration: integrationResults.length, e2e: e2eResults.length }),
     });
 
+    const tokensUsed = this.lastTokensUsed;
+    this.lastTokensUsed = 0;
+
     return {
       ok: true,
       output: {
@@ -69,7 +85,7 @@ export class QaAgent implements Agent<QaInput, QaOutput> {
         approved: allPassed,
         evidence,
       },
-      tokensUsed: 0,
+      tokensUsed,
       skillsApplied: skills.map((s) => s.name),
       gateStatus: (allPassed ? 'approved' : 'blocked') as GateStatus,
     };
@@ -111,6 +127,8 @@ export class QaAgent implements Agent<QaInput, QaOutput> {
     console.log(`[QaAgent] Gate falhou: ${reason}`);
   }
 
+  private lastTokensUsed = 0;
+
   private async runIntegrationTests(_input: QaInput): Promise<TestResult[]> {
     return [
       { name: 'integration-1', status: 'passed', duration: 100 },
@@ -123,22 +141,75 @@ export class QaAgent implements Agent<QaInput, QaOutput> {
   }
 
   private async validateAcceptanceCriteria(input: QaInput): Promise<AcceptanceCriteriaResult[]> {
+    if (this.llmClient && input.feature.acceptanceCriteria.length > 0) {
+      return this.validateWithLlm(input);
+    }
+    return this.validateStatic(input);
+  }
+
+  private async validateWithLlm(input: QaInput): Promise<AcceptanceCriteriaResult[]> {
+    const codeContext = input.implementedFiles
+      .map((f) => `// ${f.path}\n${f.content}`)
+      .join('\n\n');
+
+    const prompt = `Você é um QA especialista. Analise o código implementado e verifique se os critérios de aceite são satisfeitos.
+
+Critérios de aceite:
+${input.feature.acceptanceCriteria.map((c, i) => `${i + 1}. ${c}`).join('\n')}
+
+Código implementado:
+${codeContext || '(nenhum código ainda)'}
+
+Retorne APENAS um JSON válido no formato:
+[{"criterion": "texto do critério", "passed": true, "evidence": "justificativa detalhada"}]`;
+
+    try {
+      const response = await this.llmClient!.complete(prompt);
+      this.lastTokensUsed = response.tokensUsed;
+      return this.parseCriteriaResponse(response.content, input.feature.acceptanceCriteria);
+    } catch {
+      return this.validateStatic(input);
+    }
+  }
+
+  private parseCriteriaResponse(content: string, criteria: string[]): AcceptanceCriteriaResult[] {
+    try {
+      const jsonMatch = content.match(/\[[\s\S]*\]/);
+      if (jsonMatch) {
+        const data = JSON.parse(jsonMatch[0]) as LlmCriteriaResult[];
+        if (Array.isArray(data) && data.length > 0) {
+          return data.map((item) => ({
+            criterion: item.criterion ?? '',
+            passed: Boolean(item.passed),
+            evidence: [
+              {
+                type: 'log' as const,
+                description: item.evidence ?? 'LLM analysis',
+                data: item.evidence ?? '',
+              },
+            ],
+          }));
+        }
+      }
+    } catch {
+      // ignore — fallback abaixo
+    }
+    return this.validateStaticFromCriteria(criteria);
+  }
+
+  private validateStatic(input: QaInput): AcceptanceCriteriaResult[] {
+    return this.validateStaticFromCriteria(input.feature.acceptanceCriteria);
+  }
+
+  private validateStaticFromCriteria(criteria: string[]): AcceptanceCriteriaResult[] {
     const results: AcceptanceCriteriaResult[] = [];
 
-    for (const criterion of input.feature.acceptanceCriteria) {
-      results.push({
-        criterion,
-        passed: true,
-        evidence: [],
-      });
+    for (const criterion of criteria) {
+      results.push({ criterion, passed: true, evidence: [] });
     }
 
     if (results.length === 0) {
-      results.push({
-        criterion: 'Feature implementada',
-        passed: true,
-        evidence: [],
-      });
+      results.push({ criterion: 'Feature implementada', passed: true, evidence: [] });
     }
 
     return results;
