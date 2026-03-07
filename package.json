@@ -17,6 +17,12 @@
     "link": "npm link",
     "postinstall": "npm run link"
   },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "ocps": {
+    "nodeOptions": "--disable-warning=DEP0040"
+  },
   "keywords": [
     "cli",
     "ai",

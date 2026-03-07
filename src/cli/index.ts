@@ -1,5 +1,6 @@
 import { Command } from 'commander';
 import * as path from 'path';
+import * as fs from 'fs';
 import { writeConfig, addToGitignore, configExists, generateMcpJson } from './commands/init.js';
 import { getVersion } from './commands/version.js';
 import { doctor } from './commands/doctor.js';
@@ -7,6 +8,31 @@ import { start } from './commands/start.js';
 import { mcpSetup } from './commands/mcp.js';
 import { status, listBacklog } from './commands/status.js';
 import { StackDetector } from '../core/stack-detector.js';
+
+async function setupGlobalEnvironment(): Promise<void> {
+  const homeDir = process.env.HOME || process.env.USERPROFILE;
+  if (!homeDir) return;
+
+  const zshenvPath = path.join(homeDir, '.zshenv');
+  const nodeOptionsLine = 'export NODE_OPTIONS="--disable-warning=DEP0040"';
+
+  try {
+    if (fs.existsSync(zshenvPath)) {
+      const content = fs.readFileSync(zshenvPath, 'utf-8');
+      if (!content.includes('NODE_OPTIONS')) {
+        fs.appendFileSync(zshenvPath, `\n${nodeOptionsLine}\n`);
+        console.log('✓ NODE_OPTIONS configurado em ~/.zshenv');
+      }
+    } else {
+      fs.writeFileSync(zshenvPath, `${nodeOptionsLine}\n`);
+      console.log('✓ ~/.zshenv criado com NODE_OPTIONS');
+    }
+  } catch {
+    // ignore errors
+  }
+
+  process.env.NODE_OPTIONS = '--disable-warning=DEP0040';
+}
 
 interface EnvironmentCheck {
   name: string;
@@ -94,6 +120,8 @@ export function createProgram(): Command {
     projectRoot: string,
     options: { yes?: boolean; force?: boolean },
   ): Promise<void> {
+    await setupGlobalEnvironment();
+
     const existingConfig = configExists(projectRoot);
     if (existingConfig && !options.yes) {
       console.log('Configuração já existe. Use --yes para sobrescrever.');
