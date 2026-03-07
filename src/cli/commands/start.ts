@@ -13,15 +13,10 @@ import { createLlmClientWithFallback } from '../../core/llm-client.js';
 import { InteractiveGateEngine } from '../../core/gate-engine.js';
 import { McpBridge } from '../../mcp/mcp-bridge.js';
 import { loadSkill } from '../../skills/skill-loader.js';
+import { getProjectStatus } from './status.js';
 import type { AgentContext } from '../../types/agent.js';
 import type { Roadmap } from '../../types/roadmap.js';
 import { load as parseYaml } from 'js-yaml';
-
-interface RoadmapFeature {
-  id: string;
-  title: string;
-  status: string;
-}
 
 export async function start(): Promise<void> {
   const projectRoot = process.cwd();
@@ -42,34 +37,32 @@ export async function start(): Promise<void> {
   console.log(`Modelo:  ${config.primaryModel}`);
   console.log(`Versão:  ${getVersion()}`);
 
+  const status = getProjectStatus(projectRoot);
+
+  if (status.lastGitCommit) {
+    console.log(
+      `\n📝 Último commit (${status.lastGitCommit.date}): ${status.lastGitCommit.hash} - ${status.lastGitCommit.message}`,
+    );
+  }
+
   console.log('\n───────────────────────────────────────────────────────────────');
 
-  const roadmapDir = path.join(projectRoot, '.ocps', 'roadmap');
-  const roadmapFiles = fs.existsSync(roadmapDir)
-    ? fs.readdirSync(roadmapDir).filter((f) => (f.endsWith('.yaml') || f.endsWith('.yml')) && f !== 'backlog.yaml')
-    : [];
+  if (status.backlogItems.length > 0) {
+    const pending = status.backlogItems.filter((i) => i.status !== 'done');
+    console.log(
+      `\n📋 Backlog: ${status.backlogItems.length} itens (${pending.length} pendentes)\n`,
+    );
 
-  if (roadmapFiles.length > 0) {
-    console.log('\nFeatures ativas:\n');
-
-    for (const file of roadmapFiles) {
-      const filePath = path.join(roadmapDir, file);
-      const fileContent = fs.readFileSync(filePath, 'utf-8');
-
-      const idMatch = fileContent.match(/featureId:\s*(\S+)/);
-      const titleMatch = fileContent.match(/title:\s*["']?([^"'\n]+)["']?/);
-      const statusMatch = fileContent.match(/status:\s*(\S+)/);
-
-      const feature: RoadmapFeature = {
-        id: idMatch?.[1] || file,
-        title: titleMatch?.[1] || 'Sem título',
-        status: statusMatch?.[1] || 'unknown',
-      };
-
-      const statusIcon =
-        feature.status === 'done' ? '✓' : feature.status === 'in-progress' ? '●' : '○';
-      console.log(`  ${statusIcon} ${feature.title} [${feature.status}]`);
+    for (const item of pending.slice(0, 5)) {
+      const statusIcon = item.status === 'done' ? '✓' : item.status === 'in-progress' ? '●' : '○';
+      console.log(`  ${statusIcon} ${item.title} [${item.status}]`);
     }
+
+    if (pending.length > 5) {
+      console.log(`  ... e mais ${pending.length - 5} itens`);
+    }
+  } else {
+    console.log('\n📋 Backlog vazio');
   }
 
   console.log('\n───────────────────────────────────────────────────────────────');
@@ -112,13 +105,13 @@ export async function start(): Promise<void> {
     skillsToLoad.map(async (s) => {
       const res = await loadSkill(s, projectRoot);
       return res.ok ? res.value : null;
-    })
+    }),
   );
 
   // Carregar roadmap atual se existir (ou criar um vazio)
   let currentRoadmap: Roadmap;
   try {
-    const fase0Path = path.join(roadmapDir, 'fase-0.yaml');
+    const fase0Path = path.join(projectRoot, '.ocps', 'roadmap', 'fase-0.yaml');
     if (fs.existsSync(fase0Path)) {
       const content = fs.readFileSync(fase0Path, 'utf-8');
       currentRoadmap = parseYaml(content) as Roadmap;
@@ -131,7 +124,7 @@ export async function start(): Promise<void> {
           description: '',
           acceptanceCriteria: [],
           status: 'pending',
-          sprint: { id: 'sprint-1', tasks: [], capacityHours: 40 }
+          sprint: { id: 'sprint-1', tasks: [], capacityHours: 40 },
         },
         decisions: [],
         blockers: [],
@@ -139,7 +132,7 @@ export async function start(): Promise<void> {
         llmCheckpoint: { model: config.primaryModel, tokensAccumulated: 0, lastSavedAt: null },
         gates: {},
         createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
       };
     }
   } catch (e) {
@@ -154,19 +147,24 @@ export async function start(): Promise<void> {
     roadmap: currentRoadmap,
     skills: loadedSkills.filter((s): s is NonNullable<typeof s> => s !== null),
     sessionId: `session-${Date.now()}`,
-    mcpConnections: mcpStatus.ok ? mcpStatus.value : {
-      basicMemory: { name: 'basic-memory', enabled: false, connected: false },
-      context7: { name: 'context7', enabled: false, connected: false }
-    }
+    mcpConnections: mcpStatus.ok
+      ? mcpStatus.value
+      : {
+          basicMemory: { name: 'basic-memory', enabled: false, connected: false },
+          context7: { name: 'context7', enabled: false, connected: false },
+        },
   };
 
   console.log('\n>>> Iniciando pipeline de agentes...\n');
 
   try {
-    const result = await orchestrator.execute({
-      rawIdea,
-      projectContext: `Stack: ${config.stack}, Project: ${config.projectName}`
-    }, ctx);
+    const result = await orchestrator.execute(
+      {
+        rawIdea,
+        projectContext: `Stack: ${config.stack}, Project: ${config.projectName}`,
+      },
+      ctx,
+    );
 
     if (result.ok) {
       console.log('\n[OK] Pipeline concluído com sucesso!');

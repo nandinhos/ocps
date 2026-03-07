@@ -5,6 +5,7 @@ import { getVersion } from './commands/version.js';
 import { doctor } from './commands/doctor.js';
 import { start } from './commands/start.js';
 import { mcpSetup } from './commands/mcp.js';
+import { status, listBacklog } from './commands/status.js';
 import { StackDetector } from '../core/stack-detector.js';
 
 interface EnvironmentCheck {
@@ -205,6 +206,20 @@ export function createProgram(): Command {
     .description('Inicia sessão OCPS')
     .action(async () => {
       await start();
+    });
+
+  program
+    .command('status')
+    .description('Mostra status atual do projeto')
+    .action(async () => {
+      await status();
+    });
+
+  program
+    .command('backlog')
+    .description('Lista itens do backlog')
+    .action(async () => {
+      await listBacklog();
     });
 
   const mcp = program.command('mcp').description('Gerenciamento de MCPs');
