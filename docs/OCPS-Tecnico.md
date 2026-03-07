@@ -141,7 +141,7 @@ Inicia o pipeline interativo onde:
 - **Gates de qualidade** — Aprovações manuais em pontos críticos
 - **Documentação automática** — Backlog, tasks, sprint plans gerados
 - **Onboarding reduzido** — Novo membro segue o mesmo fluxo
-
+    
 ### 4.3 Para Projetos Legados
 
 - **Análise arqueológica** — Entende o código antes de mexer

@@ -1,0 +1,292 @@
+ITENS PARA MELHORIA DO ORQUESTRADOR
+
+No fluxo do uso do MCP (pode ser que seja em um fluxo sem mcp mas usando a skill/agente ocps, verifiquei que ele está gerando um passo desnecessário que pode ser corrigido com uma simples validação previa:
+
+ANOMALIA ENCONTRADA: "O OCPS gerou output genérico (TypeScript mock) — não é útil aqui. Vou apresentar o plano diretamente com base na análise real do código." com isso ele posteriormente realiza o processo correto
+
+AO ATIVAR O ORQUESTRADOR: Ele não recupera dados de backlog (andamento), assim não é possivel fazer de forma intuitiva a continuidade do desenvolvimento de forma prática ( digitei "status" e não me retornou nada) -> veja o fluxo de ativação que foi realizado:
+
+no Claude Code:
+
+ocps start
+Ocps [ocps_doctor]
+OUT
+OCPS Doctor
+
+
+Node.js: OK
+Config (.ocps/config.yaml): OK
+Agents: OK
+MCP Server: OK
+
+OCPS está saudável e pronto. O que vamos construir hoje?
+
+status
+Ocps [ocps_session_list]
+OUT
+Sessoes OCPS
+
+
+Nenhuma sessao ativa
+Execute 'ocps start' para iniciar
+
+Nenhuma sessão ativa. Projeto está em:
+
+Estado atual do eventos-control:
+
+Schema normalizado implementado e funcionando
+110 testes passando
+Importação CSV implementada
+Há migrations e modelos não commitados (PayableAdjustment, PayablePayment, ReceivableAdjustment, ReceivablePayment)
+O que quer fazer?
+
+no Gemini CLI: o comportamento foi de evrificar o backlog, ele já captura o primeiro item de backlog que ele ler e executa sem perguntar ao usuário o que ele deseja que seja feito. não há um report sobre o status do projeto (se existem itens em back log e um insigth mostrando ultimas alterações) sugestão para melhoria de experiência do usuário.
+
+no Antigravity:
+
+ocps start
+
+
+Error while analyzing directory
+Cannot list directory
+which does not exist.
+Error while analyzing directory
+Cannot list directory
+which does not exist.
+Error while analyzing directory
+Cannot list directory
+which does not exist.
+Error while analyzing directory
+Cannot list directory
+which does not exist.
+MCP Tool:
+ocps / ocps_doctor
+
+
+
+
+Error while analyzing directory
+Cannot list directory
+which does not exist.
+Analyzed
+\home\nandodev\projects\eventos-control\.ocps
+Analyzed
+MCP Tool:
+ocps / ocps_session_list
+
+
+
+
+
+
+Analyzed
+\home\nandodev\projects\eventos-control\.ocps\roadmap
+Analyzed
+\home\nandodev\projects\eventos-control\.ocps\sessions
+
+
+Analyzed
+\home\nandodev\projects\eventos-control
+Analyzed
+
+
+Analyzed
+MCP Tool:
+laravel-boost / database-schema
+Analyzed
+
+
+Analyzed
+\home\nandodev\projects\eventos-control\app\Livewire
+Analyzed
+\home\nandodev\projects\eventos-control\app\Http\Controllers
+
+
+
+
+MCP Tool:
+ocps / ocps_brainstorm
+
+
+
+
+
+Analyzed
+\home\nandodev\projects\eventos-control\app\Models
+
+
+MCP Tool:
+ocps / ocps_planning
+
+
+Analyzed
+
+
+MCP Tool:
+ocps / ocps_tdd
+
+
+Analyzed
+
+
+Analyzed
+Analyzed
+Error while analyzing directory
+Cannot list directory
+which does not exist.
+Ran background command
+…\eventos-control > find app/Livewire -name "*.php"
+app/Livewire/Actions/Logout.php
+Exit code 0
+Checked command status
+
+
+Analyzed
+\home\nandodev\projects\eventos-control\resources\views\components
+Analyzed
+\home\nandodev\projects\eventos-control\resources\views\components\contracts
+Analyzed
+
+
+
+
+Analyzed
+\home\nandodev\projects\eventos-control\resources\views
+
+
+0 results
+5 results
+
+
+0 results
+Analyzed
+\home\nandodev\projects\eventos-control\config
+
+
+Searched web for "laravel livewire blaze component package"
+
+
+
+Analyzed
+
+
+Analyzed
+0 results
+
+
+Searched web for "laravel livewire electric components blaze package"
+
+
+
+Analyzed
+\home\nandodev\projects\eventos-control\config
+0 results
+0 results
+
+
+Ran background command
+…\eventos-control > find . -name "Index.php"
+Exit code 0
+Checked command status
+Ran background command
+…\eventos-control > find resources/views -name "*.blade.php"
+resources/views/partials/settings-heading.blade.php
+resources/views/partials/head.blade.php
+resources/views/welcome.blade.php
+resources/views/dashboard.blade.php
+resources/views/layouts/auth.blade.php
+resources/views/layouts/app/header.blade.php
+resources/views/layouts/app/sidebar.blade.php
+resources/views/layouts/app.blade.php
+resources/views/layouts/auth/card.blade.php
+resources/views/layouts/auth/simple.blade.php
+resources/views/layouts/auth/split.blade.php
+resources/views/components/tall-ui/modal/index.blade.php
+resources/views/components/tall-ui/modal/confirm.blade.php
+resources/views/components/tall-ui/form/select.blade.php
+resources/views/components/tall-ui/form/label.blade.php
+resources/views/components/tall-ui/form/toggle.blade.php
+resources/views/components/tall-ui/form/checkbox.blade.php
+resources/views/components/tall-ui/form/error.blade.php
+resources/views/components/tall-ui/form/input.blade.php
+resources/views/components/tall-ui/dashboard/action-row.blade.php
+resources/views/components/tall-ui/dashboard/⚡notifications/notifications.blade.php
+resources/views/components/tall-ui/dashboard/header.blade.php
+resources/views/components/tall-ui/card.blade.php
+resources/views/components/tall-ui/stat-card.blade.php
+resources/views/components/tall-ui/heading.blade.php
+resources/views/components/tall-ui/badge.blade.php
+resources/views/components/tall-ui/table/index.blade.php
+resources/views/components/tall-ui/table/cell.blade.php
+resources/views/components/tall-ui/table/header.blade.php
+resources/views/components/tall-ui/table/row.blade.php
+resources/views/components/tall-ui/slide-over.blade.php
+resources/views/components/tall-ui/empty-state.blade.php
+resources/views/components/tall-ui/toast.blade.php
+resources/views/components/tall-ui/dropdown/index.blade.php
+resources/views/components/tall-ui/dropdown/item.blade.php
+resources/views/components/tall-ui/sidebar/group.blade.php
+resources/views/components/tall-ui/sidebar/promo-card.blade.php
+resources/views/components/tall-ui/sidebar/item.blade.php
+resources/views/components/tall-ui/button.blade.php
+resources/views/components/action-message.blade.php
+resources/views/components/placeholder-pattern.blade.php
+resources/views/components/app-logo.blade.php
+resources/views/components/auth-header.blade.php
+resources/views/components/contracts/⚡create.blade.php
+resources/views/components/contracts/⚡show.blade.php
+resources/views/components/contracts/⚡index.blade.php
+resources/views/components/contracts/⚡edit.blade.php
+resources/views/components/receivables/⚡show.blade.php
+resources/views/components/receivables/⚡payment-edit.blade.php
+resources/views/components/receivables/⚡index.blade.php
+resources/views/components/receivables/⚡adjustment.blade.php
+resources/views/components/receivables/⚡edit.blade.php
+resources/views/components/payables/⚡create.blade.php
+resources/views/components/payables/⚡show.blade.php
+resources/views/components/payables/⚡payment-edit.blade.php
+resources/views/components/payables/⚡index.blade.php
+resources/views/components/payables/⚡adjustment.blade.php
+resources/views/components/payables/⚡edit.blade.php
+resources/views/components/imports/⚡wizard.blade.php
+resources/views/components/auth-session-status.blade.php
+resources/views/components/icon.blade.php
+resources/views/components/⚡dashboard.blade.php
+resources/views/components/app-logo-icon.blade.php
+resources/views/components/desktop-user-menu.blade.php
+resources/views/pages/contracts/index.blade.php
+resources/views/pages/contracts/show.blade.php
+resources/views/pages/receivables/index.blade.php
+resources/views/pages/receivables/show.blade.php
+resources/views/pages/settings/layout.blade.php
+resources/views/pages/settings/⚡delete-user-form.blade.php
+resources/views/pages/settings/⚡two-factor.blade.php
+resources/views/pages/settings/⚡appearance.blade.php
+resources/views/pages/settings/two-factor/⚡recovery-codes.blade.php
+resources/views/pages/settings/⚡profile.blade.php
+resources/views/pages/settings/⚡delete-user-modal.blade.php
+resources/views/pages/settings/⚡password.blade.php
+resources/views/pages/settings/⚡two-factor-setup-modal.blade.php
+resources/views/pages/payables/index.blade.php
+resources/views/pages/payables/show.blade.php
+resources/views/pages/auth/register.blade.php
+resources/views/pages/auth/two-factor-challenge.blade.php
+resources/views/pages/auth/confirm-password.blade.php
+resources/views/pages/auth/verify-email.blade.php
+resources/views/pages/auth/forgot-password.blade.php
+resources/views/pages/auth/reset-password.blade.php
+resources/views/pages/auth/login.blade.php
+Exit code 0
+Checked command status
+Ran background command
+…\eventos-control > ls -R resources/views
+Exit code 0
+Error
+You have exhausted your capacity on this model. Your quota will reset after 2h17m48s.
+
+CONSIDERAÇÕES EXTRAS: a LLM GEMINI ela é muito proativa.... assim que eu solicito que crie um item de backlog, ele pede autorização para salvar o arquivo de backlog, mas imadiatamente após salvar ele já executa... precisa perguntar se colocará mais itens em backlog ou já vai querer implementar 
+
+PODEMOS COLOCAR PRIORIDADE DE EXECUÇÃO DE ITENS DE BACKLOG.
+
+VISTO ESSES PROBLEMAS precisamos criar um plano de ação para refinar esse sistema que já está muito bom, melhorar a dinamica de fluxo de desenvolvimento para que ele seja de fácil percepção para os modelos e LLM, de realizarem um inicio otimizado, e já sinalizar um status com ultimas alterações, e o que temos em backlog - Titulo -> pequena descrição, para que o usuário defina como proceder. NÃO EXECUTAR NADA SEM A VALIDAÇÃO DO USUÁRIO.
+
