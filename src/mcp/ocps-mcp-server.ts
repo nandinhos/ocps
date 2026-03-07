@@ -11,6 +11,7 @@ import { CodeReviewAgent } from '../agents/code-review.agent.js';
 import { SessionManager } from '../core/session-manager.js';
 import { createLlmClient } from '../core/llm-client.js';
 import { readConfig } from '../cli/commands/init.js';
+import { getProjectStatus } from '../cli/commands/status.js';
 import type { AgentContext } from '../types/agent.js';
 import type { OcpsConfig } from '../types/config.js';
 import type { Roadmap } from '../types/roadmap.js';
@@ -88,6 +89,24 @@ const server = new Server(
 );
 
 const tools = [
+  {
+    name: 'ocps_status',
+    description: 'Mostra o status atual do projeto OCPS (config, git, backlog)',
+    inputSchema: {
+      type: 'object',
+      properties: {},
+    },
+  },
+  {
+    name: 'ocps_backlog',
+    description: 'Lista todos os itens do backlog com status e prioridade',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        filter: { type: 'string', description: 'Filtro: pending, done, all', default: 'all' },
+      },
+    },
+  },
   {
     name: 'ocps_brainstorm',
     description:
@@ -192,6 +211,48 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
   try {
     switch (toolName) {
+      case 'ocps_status': {
+        const statusResult = getProjectStatus(projectRoot);
+        return {
+          content: [
+            {
+              type: 'text',
+              text: [
+                `OCPS Status`,
+                ``,
+                `Projeto: ${statusResult.projectName}`,
+                `Stack: ${statusResult.stack} (${statusResult.nature})`,
+                `Backlog: ${statusResult.backlogItems.length} itens`,
+                statusResult.lastGitCommit
+                  ? `Ultimo commit: ${statusResult.lastGitCommit.hash} - ${statusResult.lastGitCommit.message}`
+                  : 'Sem commits',
+              ].join('\n'),
+            },
+          ],
+        };
+      }
+
+      case 'ocps_backlog': {
+        const statusResult = getProjectStatus(projectRoot);
+        const filter = (args.filter as string) || 'all';
+        let items = statusResult.backlogItems;
+
+        if (filter === 'pending') {
+          items = items.filter((i) => i.status !== 'done');
+        } else if (filter === 'done') {
+          items = items.filter((i) => i.status === 'done');
+        }
+
+        const lines = [`OCPS Backlog (${items.length} itens)`, ''];
+
+        for (const item of items) {
+          const icon = item.status === 'done' ? '✓' : item.status === 'in-progress' ? '●' : '○';
+          lines.push(`${icon} [${item.status}] ${item.title}`);
+        }
+
+        return { content: [{ type: 'text', text: lines.join('\n') }] };
+      }
+
       case 'ocps_brainstorm': {
         const { ctx, llmClient } = buildSession();
         const agent = new BrainstormAgent(llmClient);
@@ -397,9 +458,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             : [
                 `Sessoes OCPS (${sessions.length})`,
                 ``,
-                ...sessions.map(
-                  (s) => `  ${s.sessionId} | ${s.currentPhase} | ${s.lastActiveAt}`,
-                ),
+                ...sessions.map((s) => `  ${s.sessionId} | ${s.currentPhase} | ${s.lastActiveAt}`),
               ].join('\n');
 
         return { content: [{ type: 'text', text }] };

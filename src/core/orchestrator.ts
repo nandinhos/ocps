@@ -148,23 +148,43 @@ export class Orchestrator {
           return { ok: false, error: 'Gate reprovado pelo desenvolvedor' };
         }
 
-        // PERSISTÊNCIA REAL APÓS APROVAÇÃO
+        // PERSISTÊNCIA REAL APÓS APROVAÇÃO COM RETRY
         const out = tddResult!.output!;
         console.log(`\n[Orchestrator] Escrevendo arquivos no disco...`);
 
-        try {
-          if (!fs.existsSync(path.dirname(out.testFile)))
-            fs.mkdirSync(path.dirname(out.testFile), { recursive: true });
-          if (!fs.existsSync(path.dirname(out.implementationFile)))
-            fs.mkdirSync(path.dirname(out.implementationFile), { recursive: true });
+        let retries = 3;
+        let lastError: Error | null = null;
 
-          fs.writeFileSync(out.testFile, out.testContent, 'utf-8');
-          fs.writeFileSync(out.implementationFile, out.implementationContent, 'utf-8');
+        while (retries > 0) {
+          try {
+            if (!fs.existsSync(path.dirname(out.testFile)))
+              fs.mkdirSync(path.dirname(out.testFile), { recursive: true });
+            if (!fs.existsSync(path.dirname(out.implementationFile)))
+              fs.mkdirSync(path.dirname(out.implementationFile), { recursive: true });
 
-          console.log(`✓ Criado: ${out.testFile}`);
-          console.log(`✓ Criado: ${out.implementationFile}`);
-        } catch (e) {
-          return { ok: false, error: `Falha ao escrever arquivos: ${e}` };
+            fs.writeFileSync(out.testFile, out.testContent, 'utf-8');
+            fs.writeFileSync(out.implementationFile, out.implementationContent, 'utf-8');
+
+            console.log(`✓ Criado: ${out.testFile}`);
+            console.log(`✓ Criado: ${out.implementationFile}`);
+            break;
+          } catch (e) {
+            lastError = e instanceof Error ? e : new Error(String(e));
+            retries--;
+            if (retries > 0) {
+              console.log(
+                `[Orchestrator] Erro ao escrever, tentando novamente... (${retries} tentativas)`,
+              );
+              await new Promise((resolve) => setTimeout(resolve, 1000));
+            }
+          }
+        }
+
+        if (retries === 0 && lastError) {
+          return {
+            ok: false,
+            error: `Falha ao escrever arquivos após 3 tentativas: ${lastError.message}`,
+          };
         }
       }
     }
