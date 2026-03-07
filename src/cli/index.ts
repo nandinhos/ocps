@@ -124,12 +124,25 @@ export function createProgram(): Command {
 
     const existingConfig = configExists(projectRoot);
     if (existingConfig && !options.yes) {
-      console.log('Configuração já existe. Use --yes para sobrescrever.');
-      process.exit(0);
-    }
+      console.log('\n⚠️  Configuração já existe!');
+      console.log('   Projeto: ' + path.basename(projectRoot));
+      console.log('   Caminho: ' + projectRoot);
 
-    if (existingConfig && options.yes) {
-      console.log('Sobrescrevendo configuração existente...');
+      const { default: readline } = await import('readline');
+      const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+
+      const answer = await new Promise<string>((resolve) => {
+        rl.question('\nDeseja sobrescrever? (s/N): ', (a) => {
+          rl.close();
+          resolve(a.trim().toLowerCase());
+        });
+      });
+
+      if (answer !== 's' && answer !== 'sim') {
+        console.log('\nInstalação cancelada.\n');
+        process.exit(0);
+      }
+      console.log('Sobrescrevendo configuração...\n');
     }
 
     const detector = new StackDetector();
