@@ -13,7 +13,9 @@
     "test:coverage": "vitest run --coverage",
     "lint": "eslint src tests",
     "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
-    "mcp": "node dist/mcp/ocps-mcp-server.js"
+    "mcp": "node dist/mcp/ocps-mcp-server.js",
+    "link": "npm link",
+    "postinstall": "npm run link"
   },
   "keywords": [
     "cli",
