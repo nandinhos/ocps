@@ -18,73 +18,21 @@ import type { AgentContext } from '../../types/agent.js';
 import type { Roadmap } from '../../types/roadmap.js';
 import { load as parseYaml } from 'js-yaml';
 
-export async function start(): Promise<void> {
-  const projectRoot = process.cwd();
-
-  const config = readConfig(projectRoot);
-  if (!config) {
-    console.error('\n✗ Configuração não encontrada.');
-    console.error('Execute "ocps init" primeiro.\n');
-    process.exit(1);
-  }
-
-  console.log('\n═══════════════════════════════════════════════════════════════');
-  console.log('  OCPS — Orquestrador Cognitivo de Projetos de Software');
-  console.log('═══════════════════════════════════════════════════════════════\n');
-
-  console.log(`Projeto: ${config.projectName}`);
-  console.log(`Stack:   ${config.stack}`);
-  console.log(`Modelo:  ${config.primaryModel}`);
-  console.log(`Versão:  ${getVersion()}`);
-
-  const status = getProjectStatus(projectRoot);
-
-  if (status.lastGitCommit) {
-    console.log(
-      `\n📝 Último commit (${status.lastGitCommit.date}): ${status.lastGitCommit.hash} - ${status.lastGitCommit.message}`,
-    );
-  }
-
-  console.log('\n───────────────────────────────────────────────────────────────');
-
-  if (status.backlogItems.length > 0) {
-    const pending = status.backlogItems.filter((i) => i.status !== 'done');
-    console.log(
-      `\n📋 Backlog: ${status.backlogItems.length} itens (${pending.length} pendentes)\n`,
-    );
-
-    for (const item of pending.slice(0, 5)) {
-      const statusIcon = item.status === 'done' ? '✓' : item.status === 'in-progress' ? '●' : '○';
-      console.log(`  ${statusIcon} ${item.title} [${item.status}]`);
-    }
-
-    if (pending.length > 5) {
-      console.log(`  ... e mais ${pending.length - 5} itens`);
-    }
-  } else {
-    console.log('\n📋 Backlog vazio');
-  }
-
-  console.log('\n───────────────────────────────────────────────────────────────');
-
+async function askQuestion(question: string): Promise<string> {
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
   });
 
-  const rawIdea = await new Promise<string>((resolve) => {
-    rl.question('\nO que deseja desenvolver hoje? ', (answer) => {
-      rl.close(); // Fechar IMEDIATAMENTE após receber a ideia
-      resolve(answer);
+  return new Promise((resolve) => {
+    rl.question(question, (answer) => {
+      rl.close();
+      resolve(answer.trim());
     });
   });
+}
 
-  if (!rawIdea || rawIdea.trim().length < 5) {
-    console.log('\nAbortado: Ideia insuficiente.\n');
-    return;
-  }
-
-  // Inicializar componentes para o Orchestrator
+async function runPipeline(rawIdea: string, projectRoot: string, config: any): Promise<void> {
   const llmClient = createLlmClientWithFallback(config);
   const brainstorm = new BrainstormAgent(llmClient);
   const planning = new PlanningAgent(llmClient);
@@ -95,11 +43,9 @@ export async function start(): Promise<void> {
   const gateEngine = new InteractiveGateEngine();
   orchestrator.setGateEngine(gateEngine);
 
-  // Preparar Contexto
   const bridge = new McpBridge(config.mcp);
-  const mcpStatus = await bridge.connect();
+  await bridge.connect();
 
-  // Carregar skills globais iniciais (exemplo simplificado)
   const skillsToLoad = ['tdd-typescript', 'elicitacao-requisitos'];
   const loadedSkills = await Promise.all(
     skillsToLoad.map(async (s) => {
@@ -108,7 +54,6 @@ export async function start(): Promise<void> {
     }),
   );
 
-  // Carregar roadmap atual se existir (ou criar um vazio)
   let currentRoadmap: Roadmap;
   try {
     const fase0Path = path.join(projectRoot, '.ocps', 'roadmap', 'fase-0.yaml');
@@ -137,7 +82,6 @@ export async function start(): Promise<void> {
     }
   } catch (e) {
     console.error(`Erro ao carregar roadmap: ${e}`);
-    rl.close();
     return;
   }
 
@@ -147,12 +91,10 @@ export async function start(): Promise<void> {
     roadmap: currentRoadmap,
     skills: loadedSkills.filter((s): s is NonNullable<typeof s> => s !== null),
     sessionId: `session-${Date.now()}`,
-    mcpConnections: mcpStatus.ok
-      ? mcpStatus.value
-      : {
-          basicMemory: { name: 'basic-memory', enabled: false, connected: false },
-          context7: { name: 'context7', enabled: false, connected: false },
-        },
+    mcpConnections: {
+      basicMemory: { name: 'basic-memory', enabled: false, connected: false },
+      context7: { name: 'context7', enabled: false, connected: false },
+    },
   };
 
   console.log('\n>>> Iniciando pipeline de agentes...\n');
@@ -175,6 +117,78 @@ export async function start(): Promise<void> {
   } catch (e) {
     console.error(`\n[ERRO] Inesperado no pipeline: ${e}`);
   }
+}
 
-  rl.close();
+export async function start(): Promise<void> {
+  const projectRoot = process.cwd();
+
+  const config = readConfig(projectRoot);
+  if (!config) {
+    console.error('\n✗ Configuração não encontrada.');
+    console.error('Execute "ocps install" primeiro.\n');
+    process.exit(1);
+  }
+
+  console.log('\n═══════════════════════════════════════════════════════════════');
+  console.log('  OCPS — Orquestrador Cognitivo de Projetos de Software');
+  console.log('═══════════════════════════════════════════════════════════════\n');
+
+  console.log(`Projeto: ${config.projectName}`);
+  console.log(`Stack:   ${config.stack}`);
+  console.log(`Modelo:  ${config.primaryModel}`);
+  console.log(`Versão:  ${getVersion()}`);
+
+  const status = getProjectStatus(projectRoot);
+
+  if (status.lastGitCommit) {
+    console.log(
+      `\n📝 Último commit (${status.lastGitCommit.date}): ${status.lastGitCommit.hash} - ${status.lastGitCommit.message}`,
+    );
+  }
+
+  console.log('\n───────────────────────────────────────────────────────────────');
+
+  const pendingItems = status.backlogItems.filter((i) => i.status !== 'done');
+
+  if (pendingItems.length > 0) {
+    console.log('\n📋 Você tem itens pendentes no backlog:\n');
+
+    for (let i = 0; i < pendingItems.length; i++) {
+      const item = pendingItems[i];
+      const statusIcon = item.status === 'in-progress' ? '●' : '○';
+      console.log(`  [${i + 1}] ${statusIcon} ${item.title}`);
+    }
+
+    console.log('\n  [N] Nova ideia');
+    console.log('  [S] Sair\n');
+
+    const choice = await askQuestion('Escolha uma opção: ');
+
+    if (choice.toUpperCase() === 'S') {
+      console.log('\nEncerrando. Até mais!\n');
+      return;
+    }
+
+    if (choice.toUpperCase() !== 'N') {
+      const itemIndex = parseInt(choice) - 1;
+      if (itemIndex >= 0 && itemIndex < pendingItems.length) {
+        const selectedItem = pendingItems[itemIndex];
+        console.log(`\n>>> Continuando com: ${selectedItem.title}\n`);
+
+        await runPipeline(selectedItem.title, projectRoot, config);
+        return;
+      }
+    }
+  }
+
+  console.log('\n───────────────────────────────────────────────────────────────');
+
+  const rawIdea = await askQuestion('\nO que deseja desenvolver hoje? ');
+
+  if (!rawIdea || rawIdea.trim().length < 5) {
+    console.log('\nAbortado: Ideia insuficiente.\n');
+    return;
+  }
+
+  await runPipeline(rawIdea, projectRoot, config);
 }

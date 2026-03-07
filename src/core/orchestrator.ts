@@ -123,7 +123,7 @@ export class Orchestrator {
     try {
       this.planningAgent.persistRoadmap(planningResult.output!, ctx.projectRoot);
     } catch {
-      // Non-fatal — continua pipeline mesmo se persist falhar
+      // Non-fatal - continues pipeline even if persist fails
     }
 
     const taskToExecute = planningResult.output!.tasks.find((t) => t.assignedAgent === 'tdd');
@@ -153,8 +153,10 @@ export class Orchestrator {
         console.log(`\n[Orchestrator] Escrevendo arquivos no disco...`);
 
         try {
-          if (!fs.existsSync(path.dirname(out.testFile))) fs.mkdirSync(path.dirname(out.testFile), { recursive: true });
-          if (!fs.existsSync(path.dirname(out.implementationFile))) fs.mkdirSync(path.dirname(out.implementationFile), { recursive: true });
+          if (!fs.existsSync(path.dirname(out.testFile)))
+            fs.mkdirSync(path.dirname(out.testFile), { recursive: true });
+          if (!fs.existsSync(path.dirname(out.implementationFile)))
+            fs.mkdirSync(path.dirname(out.implementationFile), { recursive: true });
 
           fs.writeFileSync(out.testFile, out.testContent, 'utf-8');
           fs.writeFileSync(out.implementationFile, out.implementationContent, 'utf-8');
@@ -202,7 +204,10 @@ export class Orchestrator {
 
       if (this.gateEngine) {
         if (reviewResult.output?.blockers && reviewResult.output.blockers.length > 0) {
-          return { ok: false, error: `Code review bloqueado: ${reviewResult.output.blockers[0].message}` };
+          return {
+            ok: false,
+            error: `Code review bloqueado: ${reviewResult.output.blockers[0].message}`,
+          };
         }
         const approved = await this.gateEngine.confirm('Aprovar code review?', reviewResult.output);
         if (!approved) {

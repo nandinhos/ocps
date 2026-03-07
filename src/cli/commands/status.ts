@@ -35,14 +35,14 @@ function loadBacklogItems(projectRoot: string): BacklogItemSummary[] {
       const filePath = path.join(roadmapDir, file);
       const content = fs.readFileSync(filePath, 'utf-8');
 
-      const idMatch = content.match(/id:\s*(\S+)/);
+      const featureIdMatch = content.match(/featureId:\s*["']?([^"'\n]+)["']?/);
       const titleMatch = content.match(/title:\s*["']?([^"'\n]+)["']?/);
-      const statusMatch = content.match(/status:\s*(\S+)/);
-      const priorityMatch = content.match(/priority:\s*(\S+)/);
+      const statusMatch = content.match(/status:\s*["']?([^"'\n]+)["']?/);
+      const priorityMatch = content.match(/priority:\s*["']?([^"'\n]+)["']?/);
 
-      if (idMatch || titleMatch) {
+      if (featureIdMatch || titleMatch) {
         items.push({
-          id: idMatch?.[1] || file.replace('.yaml', '').replace('.yml', ''),
+          id: featureIdMatch?.[1] || file.replace('.yaml', '').replace('.yml', ''),
           title: titleMatch?.[1] || 'Sem título',
           status: statusMatch?.[1] || 'pending',
           priority: priorityMatch?.[1] || 'medium',
