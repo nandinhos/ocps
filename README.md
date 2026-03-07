@@ -33,6 +33,29 @@ O OCPS é um orquestrador de agentes de IA que automatiza o ciclo completo de de
 - **🐍 Multi-Stack** — Suporte nativo a TypeScript, Node.js, Python, Laravel, Go, Rust
 - **📦 MCP Ready** — Integração com Basic Memory, Context7, Serena, LaravelBoost
 
+## 📚 Documentação
+
+O OCPS possui documentação técnica completa para desenvolvedores que desejam entender o projeto "dos pés à cabeça":
+
+| Documento                                                      | Descrição                                                                          |
+| -------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| [`docs/public-documentation.md`](docs/public-documentation.md) | Documentação pública completa — tudo que você precisa saber para usar e contribuir |
+| [`docs/OCPS-Tecnico.md`](docs/OCPS-Tecnico.md)                 | Documento técnico introdutório                                                     |
+| [`docs/SPEC.md`](docs/SPEC.md)                                 | Especificação completa do sistema                                                  |
+| [`AGENTS.md`](AGENTS.md)                                       | Referência técnica de cada agente                                                  |
+| [`docs/decisions/`](docs/decisions/)                           | ADRs e decisões arquiteturais                                                      |
+
+### Topics da Documentação Completa
+
+- Arquitetura de sistema detalhada (7 camadas)
+- Pipeline de execução completo
+- Contrato base de agentes
+- Sistema de skills (hierarquia, retroalimentação)
+- Integração MCP
+- Estrutura de dados e persistência
+- Considerações de segurança
+- Guia de contribuição
+
 ## 🚀 Quick Start
 
 ```bash
