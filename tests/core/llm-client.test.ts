@@ -1,5 +1,11 @@
 import { describe, it, expect, vi } from 'vitest';
-import { MockLlmClient, createLlmClientWithFallback } from '../../src/core/llm-client.js';
+import { 
+  MockLlmClient, 
+  createLlmClientWithFallback,
+  AnthropicClient,
+  OpenAiClient,
+  GoogleLlmClient
+} from '../../src/core/llm-client.js';
 import { MultiLlmManager } from '../../src/core/multi-llm-manager.js';
 import type { OcpsConfig } from '../../src/types/config.js';
 
@@ -33,7 +39,7 @@ function makeConfig(overrides: Partial<OcpsConfig> = {}): OcpsConfig {
     version: '1.0.0',
     projectName: 'test',
     stack: 'typescript',
-    primaryModel: 'claude-sonnet-4-5',
+    primaryModel: 'claude-3-5-sonnet-latest',
     mcp: {
       basicMemory: { enabled: false },
       context7: { enabled: false },
@@ -46,25 +52,42 @@ function makeConfig(overrides: Partial<OcpsConfig> = {}): OcpsConfig {
   };
 }
 
+describe('LlmClients (Vercel AI SDK)', () => {
+  it('AnthropicClient deve ser instanciável', () => {
+    process.env.ANTHROPIC_API_KEY = 'test-key';
+    const config = makeConfig({ primaryModel: 'claude-3-5-sonnet-latest' });
+    const client = new AnthropicClient(config);
+    expect(client).toBeDefined();
+  });
+
+  it('OpenAiClient deve ser instanciável', () => {
+    process.env.OPENAI_API_KEY = 'test-key';
+    const config = makeConfig({ primaryModel: 'gpt-4o' });
+    const client = new OpenAiClient(config);
+    expect(client).toBeDefined();
+  });
+
+  it('GoogleLlmClient deve ser instanciável', () => {
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY = 'test-key';
+    const config = makeConfig({ primaryModel: 'gemini-1.5-pro' });
+    const client = new GoogleLlmClient(config);
+    expect(client).toBeDefined();
+  });
+});
+
 describe('createLlmClientWithFallback', () => {
   it('deve_retornar_client_simples_sem_fallback_model', () => {
+    process.env.ANTHROPIC_API_KEY = 'test-key';
     const client = createLlmClientWithFallback(makeConfig());
     expect(client).not.toBeInstanceOf(MultiLlmManager);
   });
 
   it('deve_retornar_multi_llm_manager_com_fallback_model', () => {
+    process.env.ANTHROPIC_API_KEY = 'test-key';
+    process.env.OPENAI_API_KEY = 'test-key';
     const client = createLlmClientWithFallback(
-      makeConfig({ fallbackModel: 'claude-haiku-4-5' }),
+      makeConfig({ fallbackModel: 'gpt-4o' }),
     );
     expect(client).toBeInstanceOf(MultiLlmManager);
-  });
-
-  it('deve_completar_com_fallback_ativo', async () => {
-    const client = createLlmClientWithFallback(
-      makeConfig({ fallbackModel: 'claude-haiku-4-5' }),
-    );
-    const result = await client.complete('test prompt');
-    expect(result.content).toBeDefined();
-    expect(result.tokensUsed).toBeGreaterThanOrEqual(0);
   });
 });

@@ -1,4 +1,7 @@
-import Anthropic from '@anthropic-ai/sdk';
+import { anthropic } from '@ai-sdk/anthropic';
+import { openai } from '@ai-sdk/openai';
+import { google } from '@ai-sdk/google';
+import { generateText } from 'ai';
 import type { OcpsConfig } from '../types/config.js';
 import { MultiLlmManager } from './multi-llm-manager.js';
 
@@ -12,41 +15,70 @@ export interface LlmClient {
 }
 
 export class AnthropicClient implements LlmClient {
-  private client: Anthropic;
   private model: string;
-  private temperature: number;
-  private maxTokens: number;
 
   constructor(config: OcpsConfig, modelOverride?: string) {
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-
-    if (!apiKey) {
+    if (!process.env.ANTHROPIC_API_KEY) {
       throw new Error('ANTHROPIC_API_KEY não configurada');
     }
-
-    this.client = new Anthropic({ apiKey });
-    this.model = modelOverride ?? config.primaryModel ?? 'claude-sonnet-4-5';
-    this.temperature = 0.7;
-    this.maxTokens = 4096;
+    this.model = modelOverride ?? config.primaryModel ?? 'claude-3-5-sonnet-latest';
   }
 
   async complete(prompt: string): Promise<LlmResponse> {
-    const message = await this.client.messages.create({
-      model: this.model,
-      max_tokens: this.maxTokens,
-      temperature: this.temperature,
-      messages: [{ role: 'user', content: prompt }],
+    const { text, usage } = await generateText({
+      model: anthropic(this.model) as any,
+      prompt,
     });
-
-    const content = message.content[0];
-    let text = '';
-    if ('text' in content) {
-      text = content.text;
-    }
 
     return {
       content: text,
-      tokensUsed: message.usage.input_tokens + message.usage.output_tokens,
+      tokensUsed: usage.totalTokens,
+    };
+  }
+}
+
+export class OpenAiClient implements LlmClient {
+  private model: string;
+
+  constructor(_config: OcpsConfig, modelOverride?: string) {
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('OPENAI_API_KEY não configurada');
+    }
+    this.model = modelOverride ?? 'gpt-4o';
+  }
+
+  async complete(prompt: string): Promise<LlmResponse> {
+    const { text, usage } = await generateText({
+      model: openai(this.model) as any,
+      prompt,
+    });
+
+    return {
+      content: text,
+      tokensUsed: usage.totalTokens,
+    };
+  }
+}
+
+export class GoogleLlmClient implements LlmClient {
+  private model: string;
+
+  constructor(_config: OcpsConfig, modelOverride?: string) {
+    if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+      throw new Error('GOOGLE_GENERATIVE_AI_API_KEY não configurada');
+    }
+    this.model = modelOverride ?? 'gemini-1.5-pro';
+  }
+
+  async complete(prompt: string): Promise<LlmResponse> {
+    const { text, usage } = await generateText({
+      model: google(this.model) as any,
+      prompt,
+    });
+
+    return {
+      content: text,
+      tokensUsed: usage.totalTokens,
     };
   }
 }
@@ -86,13 +118,22 @@ export class MockLlmClient implements LlmClient {
 }
 
 export function createLlmClient(config: OcpsConfig, useMock = false): LlmClient {
-  if (useMock || !process.env.ANTHROPIC_API_KEY) {
-    if (!useMock) {
-      console.warn('[OCPS] ANTHROPIC_API_KEY nao configurada — usando MockLlmClient (respostas simuladas)');
-    }
-    return new MockLlmClient();
+  if (useMock) return new MockLlmClient();
+
+  if (config.primaryModel?.startsWith('claude') && process.env.ANTHROPIC_API_KEY) {
+    return new AnthropicClient(config);
   }
-  return new AnthropicClient(config);
+
+  if ((config.primaryModel?.startsWith('gpt') || config.primaryModel?.startsWith('o1')) && process.env.OPENAI_API_KEY) {
+    return new OpenAiClient(config);
+  }
+
+  if (config.primaryModel?.startsWith('gemini') && process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+    return new GoogleLlmClient(config);
+  }
+
+  console.warn('[OCPS] API Key não configurada ou modelo desconhecido — usando MockLlmClient');
+  return new MockLlmClient();
 }
 
 export function createLlmClientWithFallback(config: OcpsConfig): LlmClient {
@@ -100,21 +141,34 @@ export function createLlmClientWithFallback(config: OcpsConfig): LlmClient {
     return createLlmClient(config);
   }
 
-  const hasApiKey = Boolean(process.env.ANTHROPIC_API_KEY);
-  const primary: LlmClient = hasApiKey ? new AnthropicClient(config) : new MockLlmClient();
-  const fallback: LlmClient = hasApiKey
-    ? new AnthropicClient(config, config.fallbackModel)
-    : new MockLlmClient();
+  const primary = createLlmClient(config);
+  const fallback = createLlmClient({ ...config, primaryModel: config.fallbackModel });
+
+  if (primary instanceof MockLlmClient || fallback instanceof MockLlmClient) {
+    console.warn('[LLM] Usando MockLlmClient para primary ou fallback');
+  }
 
   const manager = new MultiLlmManager();
-  manager.addProvider('anthropic', primary);
-  manager.addProvider('openai', fallback);
+  
+  const getProvider = (model: string): any => {
+    if (model.startsWith('claude')) return 'anthropic';
+    if (model.startsWith('gpt') || model.startsWith('o1')) return 'openai';
+    if (model.startsWith('gemini')) return 'google';
+    return 'anthropic';
+  };
+
+  const primaryProvider = getProvider(config.primaryModel);
+  const fallbackProvider = getProvider(config.fallbackModel);
+
+  manager.addProvider(primaryProvider, primary);
+  manager.addProvider(fallbackProvider, fallback);
+  
   manager.setStrategy({
-    primary: { provider: 'anthropic', model: config.primaryModel, apiKey: '' },
-    fallback: { provider: 'openai', model: config.fallbackModel, apiKey: '' },
-    priority: ['anthropic', 'openai'],
+    primary: { provider: primaryProvider, model: config.primaryModel, apiKey: '' },
+    fallback: { provider: fallbackProvider, model: config.fallbackModel, apiKey: '' },
+    priority: [primaryProvider, fallbackProvider],
   });
 
-  console.log(`[LLM] MultiLlmManager: ${config.primaryModel} → ${config.fallbackModel} (fallback em rate limit)`);
+  console.log(`[LLM] MultiLlmManager: ${config.primaryModel} (${primaryProvider}) → ${config.fallbackModel} (${fallbackProvider})`);
   return manager;
 }

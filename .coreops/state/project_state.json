@@ -1,0 +1,24 @@
+{
+  "project": "ocps",
+  "description": "Orquestrador Cognitivo de Projetos de Software - Framework CLI para desenvolvimento assistido por IA com pipeline automatizado de agentes",
+  "current_phase": "DONE",
+  "phases_completed": [
+    "IDEA",
+    "BRAINSTORM",
+    "PLANNING",
+    "ARCHITECTURE",
+    "TDD",
+    "CODING",
+    "REVIEW",
+    "QA",
+    "DEPLOY"
+  ],
+  "tasks_total": 0,
+  "tasks_completed": 0,
+  "tasks_pending": 0,
+  "started_at": "2026-03-08T22:09:32.676Z",
+  "last_updated": "2026-03-08T22:31:57.612Z",
+  "last_transition": "2026-03-08T22:31:57.612Z",
+  "workspace_path": "/home/nandodev/projects/ocps",
+  "llm_source": "claude-cli"
+}

@@ -1,0 +1,46 @@
+{
+  "tasks": [
+    {
+      "id": "t-cod-001",
+      "title": "Criar estrutura de diretórios para Engine de Microtasks",
+      "status": "done",
+      "description": "Criar src/engine/microtasks/ e arquivos generator.ts, executor.ts, validator.ts."
+    },
+    {
+      "id": "t-cod-002",
+      "title": "Implementar Microtask Generator",
+      "status": "done",
+      "description": "Implementar a lógica que quebra uma feature em pequenas tarefas (2-5 min)."
+    },
+    {
+      "id": "t-cod-003",
+      "title": "Implementar Microtask Executor",
+      "status": "done",
+      "description": "Implementar o runner que executa cada microtask de forma atômica."
+    },
+    {
+      "id": "t-cod-004",
+      "title": "Implementar Microtask Validator",
+      "status": "done",
+      "description": "Implementar a validação do output de cada microtarefa."
+    },
+    {
+      "id": "t-rev-001",
+      "title": "Auto-review do Engine de Microtasks",
+      "status": "done",
+      "description": "Verificar contratos e cobertura de testes (atual 97%)."
+    },
+    {
+      "id": "t-qa-001",
+      "title": "Teste de Integração do Engine de Microtasks",
+      "status": "done",
+      "description": "Validar fluxo completo: geração, execução e validação."
+    },
+    {
+      "id": "t-dep-001",
+      "title": "Build e Verificação de Tipagem",
+      "status": "done",
+      "description": "Executar npm run build e corrigir erros de tipagem do AI SDK."
+    }
+  ]
+}

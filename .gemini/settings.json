@@ -1,12 +1,9 @@
 {
   "mcpServers": {
-    "ocps": {
-      "command": "/home/nandodev/projects/ocps/node_modules/.bin/npm",
+    "coreops": {
+      "command": "bun",
       "args": [
-        "--prefix",
-        "/home/nandodev/projects/ocps",
-        "run",
-        "mcp"
+        "/home/nandodev/projects/coreops/src/mcp/server.ts"
       ]
     }
   }
